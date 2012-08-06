@@ -69,7 +69,7 @@ BuildRequires: jcip-annotations
 BuildRequires: jettison
 BuildRequires: jetty
 BuildRequires: jibx
-BuildRequires: jgroups
+BuildRequires: jgroups212
 BuildRequires: json-lib
 BuildRequires: jsr-305
 BuildRequires: junit
@@ -307,7 +307,7 @@ tools.  It is neither intended nor supported for use by any other programs.
 
 %prep
 %setup -q
-%patch0 -p1
+# %patch0 -p1
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
@@ -337,12 +337,6 @@ do
   ln -s $x clc/lib/;
 done
 
-sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
-       -e 's#.*HYPERVISOR=.*#HYPERVISOR="%{euca_hypervisor}"#' \
-       -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="/var/lib/eucalyptus/instances"#' \
-       -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="%{euca_bridge}"#' \
-       $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
-
 # FIXME: storage/Makefile breaks with parallel make
 LANG=en_US.UTF-8 make # %{?_smp_mflags}
 
@@ -355,10 +349,13 @@ do
   ln -s $x $RPM_BUILD_ROOT/usr/share/eucalyptus/
 done
 
-sed -i 's#.*USE_VIRTIO_DISK=.*#USE_VIRTIO_DISK="1"#' $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
-sed -i 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
-
-sed -i 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="%{euca_bridge}"#' $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
+sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
+       -e 's#.*HYPERVISOR=.*#HYPERVISOR="%{euca_hypervisor}"#' \
+       -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="/var/lib/eucalyptus/instances"#' \
+       -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="%{euca_bridge}"#' \
+       -e 's#.*USE_VIRTIO_DISK=.*#USE_VIRTIO_DISK="1"#' \
+       -e 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' \
+       $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
 
 # Eucalyptus's build scripts do not respect initrddir
 if [ %{_initrddir} != /etc/init.d ]; then
