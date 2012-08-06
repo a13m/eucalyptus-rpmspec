@@ -1,0 +1,79 @@
+diff -ur eucalyptus-3.bzr1505.new/clc/modules/module-inc.xml eucalyptus-3.bzr1505/clc/modules/module-inc.xml
+--- eucalyptus-3.bzr1505.new/clc/modules/module-inc.xml	2012-02-09 03:58:11.960546598 -0500
++++ eucalyptus-3.bzr1505/clc/modules/module-inc.xml	2012-02-09 10:03:52.303521124 -0500
+@@ -118,6 +118,16 @@
+ 			<include name="**/*" />
+ 		</fileset>
+ 	</path>
++	<path id="srcpathjava">
++		<fileset dir="${build.dir}">
++			<include name="**/*.java" />
++		</fileset>
++	</path>
++	<path id="srcpathgroovy">
++		<fileset dir="${build.dir}">
++			<include name="**/*.groovy" />
++		</fileset>
++	</path>
+ 	<!--================================== copy conf ==================================-->
+ 	<target name="copy-conf">
+ 		<copy todir="${DESTDIR}${euca.conf.dir}">
+@@ -195,9 +195,21 @@
+ 		<antcall target="build-mkdirs" inheritall="true" inheritrefs="true" />
+ 		<taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc" classpathref="classpath" />
+ 		<groovyc srcdir="${src.dir}" classpathref="classpath" sourcepathref="srcpath" destdir="${build.dir}" verbose="true" listfiles="true">
+-			<javac source="1.6" target="1.6" debug="true" />
++			<javac source="1.6" target="1.6" debug="true" />
+ 		</groovyc>
+ 	</target>
++        <target name="build-groovy-isolated" depends="should-build-groovy" unless="build.notRequired">
++               <echo message="[COMPILE] ${builder.target} for ${ant.project.name}" />
++               <antcall target="clean" />
++               <mkdir dir="${build.dir}" />
++               <mkdir dir="${conf.dir}" />
++               <mkdir dir="${rsrc.dir}" />
++               <mkdir dir="${test.dir}" />
++               <mkdir dir="${src.dir}" />
++               <taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc" classpathref="classpath" />
++               <groovyc srcdir="${src.dir}" classpathref="classpath" sourcepathref="srcpathgroovy" destdir="${build.dir}" verbose="true" listfiles="true"/>
++                <javac srcdir="${src.dir}" classpathref="classpath" destdir="${build.dir}" deprecation="true" failonerror="true" debug="true" sourcepathref="srcpathjava" target="1.7" listfiles="true" encoding="UTF-8" />
++        </target>
+ 	<target name="builder-test">
+ 		<antcall target="build-mkdirs" inheritall="true" inheritrefs="true" />
+ 		<condition property="builder.target" value="build-${builder.suffix}" else="build-java">
+diff -ur eucalyptus-3.bzr1505.new/clc/modules/configuration/build.xml eucalyptus-3.bzr1505/clc/modules/configuration/build.xml
+--- eucalyptus-3.bzr1505.new/clc/modules/configuration/build.xml	2012-02-09 02:24:49.000000000 -0500
++++ eucalyptus-3.bzr1505/clc/modules/configuration/build.xml	2012-02-10 04:53:55.476262078 -0500
+@@ -61,7 +61,7 @@
+   ~ Author: chris grzegorczyk <grze@eucalyptus.com>
+   --> 
+ <project name="eucalyptus-config" basedir=".">
+-  <property name="builder.suffix" value="groovy" />
++  <property name="builder.suffix" value="groovy-isolated" />
+   <uptodate property="groovyc.notRequired" targetfile="${jar.file}">
+     <srcfiles dir="${src.dir}" includes="**/*" />
+   </uptodate>
+diff -ur eucalyptus-3.bzr1505.new/clc/modules/notifications/build.xml eucalyptus-3.bzr1505/clc/modules/notifications/build.xml
+--- eucalyptus-3.bzr1505.new/clc/modules/notifications/build.xml	2012-02-09 02:24:49.000000000 -0500
++++ eucalyptus-3.bzr1505/clc/modules/notifications/build.xml	2012-02-10 04:54:13.664260948 -0500
+@@ -61,7 +61,7 @@
+   ~  @author: Chris Grzeogorczyk grze@eucalyptus.com
+   ~-->
+ <project name="eucalyptus-notifications-common" basedir=".">
+-    <property name="builder.suffix" value="groovy" />
++    <property name="builder.suffix" value="groovy-isolated" />
+     <uptodate property="groovyc.notRequired" targetfile="${jar.file}">
+       <srcfiles dir="${src.dir}" includes="**/*" />
+     </uptodate>
+diff -ur eucalyptus-3.bzr1505.old/clc/modules/cloud/build.xml eucalyptus-3.bzr1505/clc/modules/cloud/build.xml
+--- eucalyptus-3.bzr1505.old/clc/modules/cloud/build.xml	2012-02-09 02:24:49.000000000 -0500
++++ eucalyptus-3.bzr1505/clc/modules/cloud/build.xml	2012-02-10 05:07:50.177185340 -0500
+@@ -62,7 +62,7 @@
+   --> 
+ <project name="eucalyptus-cloud" basedir=".">
+   <!--================================== BUILD TARGETS ==================================-->
+-  <property name="builder.suffix" value="groovy" />
++  <property name="builder.suffix" value="groovy-isolated" />
+   <uptodate property="groovyc.notRequired" targetfile="${jar.file}">
+     <srcfiles dir="${src.dir}" includes="**/*" />
+   </uptodate>

@@ -1,0 +1,193 @@
+diff --git a/cluster/Makefile b/cluster/Makefile
+index b6a68aa..68e7436 100644
+--- a/cluster/Makefile
++++ b/cluster/Makefile
+@@ -35,14 +35,14 @@ generated/stubs: $(CCWSDL) $(NCWSDL)
+ 	rm -rf generated
+ 	mkdir -p generated
+ 	@echo Generating client stubs
+-	sh $(WSDL2C) -uri $(CCWSDL) -g -d adb -u -uw -f -o generated | grep -v 'the classpath'
++	sh $(WSDL2C) -uri $(CCWSDL) -g -d adb -u -f -o generated | grep -v 'the classpath'
+ 	@echo Generating NCclient stubs
+-	sh $(WSDL2C) -uri $(NCWSDL) -g -d adb -u -uw -f -o generated | grep -v 'the classpath'
++	sh $(WSDL2C) -uri $(NCWSDL) -g -d adb -u -f -o generated | grep -v 'the classpath'
+ 	@echo Generating server stubs
+-	sh $(WSDL2C) -uri $(CCWSDL) -sd -ss -d adb -u -uw -f -o generated | grep -v 'the classpath'
++	sh $(WSDL2C) -uri $(CCWSDL) -sd -ss -d adb -u -f -o generated | grep -v 'the classpath'
+ 	@echo Adding marshalling calls to server stubs
+ #	../tools/add_marshalling.pl generated/axis2_skel_*.c generated/axis2_svc_skel_*.c
+-	../tools/add_marshalling.pl generated/axis2_skel_*.c 
++#	../tools/add_marshalling.pl generated/axis2_skel_*.c 
+ #	@echo Compiling the stubs
+ #	cd generated; patch -p1 < ../axis2_svc_generated.patch; $(CC) -c $(CFLAGS) $(INCLUDES) *.c
+ 	cd generated; patch -p1 < ../axis2_svc_generated.patch; cd ../
+@@ -78,13 +78,13 @@ $(SERVICE_SO_FAKE):
+ client: $(CLIENT)_full $(CLIENTKILLALL) $(SHUTDOWNCC)
+ 
+ $(SHUTDOWNCC): generated/stubs $(SHUTDOWNCC).c cc-client-marshal-adb.c handlers.o handlers-state.o
+-	$(CC) -o $(SHUTDOWNCC) $(CFLAGS) $(INCLUDES) $(SHUTDOWNCC).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
++	$(CC) -o $(SHUTDOWNCC) $(CFLAGS) $(INCLUDES) $(SHUTDOWNCC).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
+ 
+ $(CLIENT)_full: generated/stubs $(CLIENT).c cc-client-marshal-adb.c handlers.o handlers-state.o
+-	$(CC) -o $(CLIENT)_full $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
++	$(CC) -o $(CLIENT)_full $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
+ 
+ $(CLIENTKILLALL): generated/stubs $(CLIENT).c cc-client-marshal-adb.c handlers.o handlers-state.o
+-	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
++	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
+ 
+ fakedeploy:
+ 	$(INSTALL) $(SERVICE_SO_FAKE) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(SERVICE_SO)
+diff --git a/configure b/configure
+index a6111af..d5a1acf 100755
+--- a/configure
++++ b/configure
+@@ -5948,79 +5948,6 @@ _ACEOF
+ fi
+ 
+ 
+-{ $as_echo "$as_me:$LINENO: checking for main in -lmod_rampart" >&5
+-$as_echo_n "checking for main in -lmod_rampart... " >&6; }
+-if test "${ac_cv_lib_mod_rampart_main+set}" = set; then
+-  $as_echo_n "(cached) " >&6
+-else
+-  ac_check_lib_save_LIBS=$LIBS
+-LIBS="-lmod_rampart  $LIBS"
+-cat >conftest.$ac_ext <<_ACEOF
+-/* confdefs.h.  */
+-_ACEOF
+-cat confdefs.h >>conftest.$ac_ext
+-cat >>conftest.$ac_ext <<_ACEOF
+-/* end confdefs.h.  */
+-
+-
+-int
+-main ()
+-{
+-return main ();
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-rm -f conftest.$ac_objext conftest$ac_exeext
+-if { (ac_try="$ac_link"
+-case "(($ac_try" in
+-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+-  *) ac_try_echo=$ac_try;;
+-esac
+-eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+-$as_echo "$ac_try_echo") >&5
+-  (eval "$ac_link") 2>conftest.er1
+-  ac_status=$?
+-  grep -v '^ *+' conftest.er1 >conftest.err
+-  rm -f conftest.er1
+-  cat conftest.err >&5
+-  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+-  (exit $ac_status); } && {
+-	 test -z "$ac_c_werror_flag" ||
+-	 test ! -s conftest.err
+-       } && test -s conftest$ac_exeext && {
+-	 test "$cross_compiling" = yes ||
+-	 $as_test_x conftest$ac_exeext
+-       }; then
+-  ac_cv_lib_mod_rampart_main=yes
+-else
+-  $as_echo "$as_me: failed program was:" >&5
+-sed 's/^/| /' conftest.$ac_ext >&5
+-
+-	ac_cv_lib_mod_rampart_main=no
+-fi
+-
+-rm -rf conftest.dSYM
+-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+-      conftest$ac_exeext conftest.$ac_ext
+-LIBS=$ac_check_lib_save_LIBS
+-fi
+-{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_mod_rampart_main" >&5
+-$as_echo "$ac_cv_lib_mod_rampart_main" >&6; }
+-if test "x$ac_cv_lib_mod_rampart_main" = x""yes; then
+-  cat >>confdefs.h <<_ACEOF
+-#define HAVE_LIBMOD_RAMPART 1
+-_ACEOF
+-
+-  LIBS="-lmod_rampart $LIBS"
+-
+-else
+-  { { $as_echo "$as_me:$LINENO: error: Cannot find libmod_rampart" >&5
+-$as_echo "$as_me: error: Cannot find libmod_rampart" >&2;}
+-   { (exit 1); exit 1; }; }
+-fi
+-
+-
+ { $as_echo "$as_me:$LINENO: checking for main in -lneethi" >&5
+ $as_echo_n "checking for main in -lneethi... " >&6; }
+ if test "${ac_cv_lib_neethi_main+set}" = set; then
+diff --git a/configure.ac b/configure.ac
+index 2993dd0..3b5196b 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -230,7 +230,7 @@ AC_CHECK_LIB([guththila],[main],,AC_MSG_ERROR([Cannot find libguththila!]))
+ AC_CHECK_LIB([axis2_parser],[axiom_xml_reader_init],,AC_MSG_ERROR([Cannot find axis2 libs!]))
+ AC_CHECK_LIB([axutil],[main],,AC_MSG_ERROR([Cannot find libaxutil]))
+ AC_CHECK_LIB([m],[main])
+-AC_CHECK_LIB([mod_rampart],[main],,AC_MSG_ERROR([Cannot find libmod_rampart]))
++# AC_CHECK_LIB([mod_rampart],[main],,AC_MSG_ERROR([Cannot find libmod_rampart]))
+ AC_CHECK_LIB([neethi],[main],,AC_MSG_ERROR([Cannot find libneethi!]))
+ AC_CHECK_LIB([pthread],[main])
+ AC_CHECK_LIB([rt],[main])
+diff --git a/gatherlog/Makefile b/gatherlog/Makefile
+index e479095..a70a434 100644
+--- a/gatherlog/Makefile
++++ b/gatherlog/Makefile
+@@ -24,11 +24,11 @@ generated/stubs: $(GLWSDL)
+ 	rm -rf generated
+ 	mkdir -p generated
+ 	@echo Generating client stubs
+-	sh $(WSDL2C) -uri $(GLWSDL) -g -d adb -u -uw -f -o generated | grep -v 'the classpath'
++	sh $(WSDL2C) -uri $(GLWSDL) -g -d adb -u -f -o generated
+ 	@echo Generating server stubs
+-	sh $(WSDL2C) -uri $(GLWSDL) -sd -ss -d adb -u -uw -f -o generated | grep -v 'the classpath'
++	sh $(WSDL2C) -uri $(GLWSDL) -sd -ss -d adb -u -f -o generated
+ 	@echo Adding marshalling calls to server stubs
+-	../tools/add_marshalling.pl generated/axis2_skel_*.c
++	@ ../tools/add_marshalling.pl generated/axis2_skel_*.c
+ 	@cp ../tools/Makefile.gen generated/Makefile
+ 	@echo "this is a cute little makefile marker" >generated/stubs
+ 	@echo Stubs generated.
+@@ -44,7 +44,7 @@ $(SERVICE_SO): generated/stubs $(GENERATEDOBJS) gl-client-marshal-adb.o server-m
+ client: $(CLIENT)
+ 
+ $(CLIENT): generated/stubs $(CLIENT).c gl-client-marshal-adb.c handlers.o
+-	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
++	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
+ 
+ deploy:
+ 	$(INSTALL) -d $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
+diff --git a/node/Makefile b/node/Makefile
+index 8eb5146..de298df 100644
+--- a/node/Makefile
++++ b/node/Makefile
+@@ -34,12 +34,12 @@ generated/stubs: $(NCWSDL)
+ 	@echo Generating server stubs
+ 	rm -rf generated
+ 	mkdir -p generated
+-	sh $(WSDL2C) -uri $(NCWSDL) -sd -ss -d adb -u -uw -f -o generated | grep -v 'the classpath'
++	sh $(WSDL2C) -uri $(NCWSDL) -sd -ss -d adb -u -f -o generated | grep -v 'the classpath'
+ 	@echo Adding marshalling calls to server stubs
+ #	../tools/add_marshalling.pl generated/axis2_skel_*.c generated/axis2_svc_skel_*.c
+ 	../tools/add_marshalling.pl generated/axis2_skel_*.c 
+ 	@echo Generating client stubs
+-	sh $(WSDL2C) -uri $(NCWSDL) -g -d adb -u -uw -f -o generated | grep -v 'the classpath'
++	sh $(WSDL2C) -uri $(NCWSDL) -g -d adb -u -f -o generated | grep -v 'the classpath'
+ #	@echo Compiling the stubs
+ 	cd generated; patch -p1 < ../axis2_svc_generated.patch; cd ../
+ 	@cp ../tools/Makefile.gen generated/Makefile
+@@ -98,7 +98,7 @@ client: $(CLIENT) $(CLIENT)_local
+ fake: $(CLIENT)_fake
+ 
+ $(CLIENT): generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o $(CLIENT).c ../storage/vbr.o
+-	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
++	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
+ 
+ $(CLIENT)_fake: generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o client-marshal-fake.o $(CLIENT).c ../storage/vbr.o
+ 

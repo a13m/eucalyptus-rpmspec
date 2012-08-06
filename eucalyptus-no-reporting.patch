@@ -1,0 +1,32 @@
+--- eucalyptus-3.1.0/clc/modules/walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/WalrusManager.java	2012-06-20 14:56:25.161225382 -0400
++++ eucalyptus-3.1.0/clc/modules/walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/WalrusManager.java	2012-07-16 18:12:52.805715806 -0400
+@@ -109,8 +109,8 @@
+ import com.eucalyptus.entities.EntityWrapper;
+ import com.eucalyptus.entities.TransactionException;
+ import com.eucalyptus.reporting.event.S3Event;
+-import com.eucalyptus.reporting.queue.*;
+-import com.eucalyptus.reporting.queue.QueueFactory.QueueIdentifier;
++// import com.eucalyptus.reporting.queue.*;
++// import com.eucalyptus.reporting.queue.QueueFactory.QueueIdentifier;
+ import com.eucalyptus.util.EucalyptusCloudException;
+ import com.eucalyptus.util.Exceptions;
+ import com.eucalyptus.util.Lookups;
+@@ -489,7 +489,7 @@
+ 	
+ 	/* Report the event to the reporting system */
+ 	private void reportWalrusEvent(S3Event event) {
+-		if(event != null) {
++		/* if(event != null) {
+ 			try {
+ 				QueueSender queueSender = QueueFactory.getInstance().getSender(QueueIdentifier.S3);
+ 				queueSender.send(event);
+@@ -499,7 +499,8 @@
+ 		}
+ 		else {
+ 			LOG.error("Non-fatal error: cannot report a null Walrus event.");
+-		}
++		} */
++                return;
+ 	}
+ 	
+ 	private boolean checkBucketName(String bucketName) {

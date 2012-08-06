@@ -1,20 +1,5 @@
-%if 0%{?el5}
-%global euca_bridge       xenbr0
-%global euca_build_req    vconfig, wget, rsync
-%global euca_curl         curl
+%global axis2c_home       /usr
 %global euca_dhcp         dhcp
-%global euca_httpd        httpd
-%global euca_hypervisor   xen
-%global euca_iscsi_client iscsi-initiator-utils
-%global euca_iscsi_server scsi-target-utils
-%global euca_libcurl      curl-devel
-%global euca_libvirt      libvirt >= 0.6
-%global pybasever         26
-%global __python_ver      2.6
-%global __python          %{_bindir}/python%{__python_ver}
-%global __os_install_post %{__multiple_python_os_install_post}
-%endif
-%if 0%{?fedora} || 0%{?rhel} >= 6
 %global euca_bridge       br0
 %global euca_build_req    vconfig, wget, rsync
 %global euca_curl         curl
@@ -24,81 +9,86 @@
 %global euca_iscsi_server scsi-target-utils
 %global euca_libcurl      curl-devel
 %global euca_libvirt      libvirt
-%endif
-%if 0%{?rhel} >= 6
-%global euca_dhcp         dhcp41
-%endif
-%if 0%{?fedora}
-%global euca_dhcp         dhcp
-%endif
+%global euca_which        which
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
-%define provide_abi() \
-%{!?abi_version: %define abi_version %{version}-%{release}} \
-%if 0%# \
-Provides: %{name}-abi(%1) = %{abi_version} \
-%else \
-Provides: %{name}-abi = %{abi_version} \
-%endif \
-%{nil}
-
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
-Version:       3.2.0
-Release:       0%{?build_id:.%build_id}%{?dist}
+Version:       3.1.0
+Release:       2%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
 
 BuildRequires: ant >= 1.7
 BuildRequires: ant-nodeps >= 1.7
-BuildRequires: axis2-adb-codegen
-BuildRequires: axis2-codegen
-BuildRequires: axis2c-devel >= 1.6.0
-BuildRequires: java-devel >= 1:1.6.0
+BuildRequires: axis2
+BuildRequires: wso2-axis2-devel
+BuildRequires: wso2-rampart-devel
 BuildRequires: jpackage-utils
 BuildRequires: libvirt-devel >= 0.6
 BuildRequires: libxml2-devel
 BuildRequires: libxslt-devel
-BuildRequires: openssl-devel
 BuildRequires: python%{?pybasever}-devel
 BuildRequires: python%{?pybasever}-setuptools
-BuildRequires: rampartc-devel >= 1.3.0
 BuildRequires: swig
 BuildRequires: velocity
-BuildRequires: xalan-j2-xsltc
 BuildRequires: /usr/bin/awk
+BuildRequires: java-devel >= 1:1.6.0
+BuildRequires: openssl-devel
 
 BuildRequires: %{euca_iscsi_client}
 BuildRequires: %{euca_libvirt}-devel
 BuildRequires: %{euca_libvirt}
 BuildRequires: %{euca_libcurl}
 
+# Java stuff moving out of cloud-lib
+BuildRequires: antlr3
+BuildRequires: apache-commons-compress
+BuildRequires: btm
+BuildRequires: dnsjava
+BuildRequires: ezmorph
+BuildRequires: hibernate3-ehcache
+BuildRequires: hibernate3-entitymanager
+BuildRequires: hibernate3-jbosscache
+BuildRequires: jboss-common-core
+BuildRequires: jboss-logging
+BuildRequires: jboss-marshalling
+BuildRequires: jcip-annotations
+BuildRequires: jettison
+BuildRequires: jetty
+BuildRequires: jibx
+BuildRequires: jgroups
+BuildRequires: json-lib
+BuildRequires: jsr-305
+BuildRequires: junit
+BuildRequires: objectweb-asm
+BuildRequires: postgresql-jdbc
+BuildRequires: proxool
+BuildRequires: quartz
+
 Requires:      %{euca_build_req}
-Requires:      libselinux-python
+Requires:      %{euca_which}
 Requires:      perl(Crypt::OpenSSL::RSA)
 Requires:      perl(Crypt::OpenSSL::Random)
 Requires:      sudo
-Requires:      /usr/bin/which
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
+Requires(post): %{_sbindir}/euca_conf
+Requires:      libselinux-python
 
-%provide_abi
-
-# Transition away from libraries in /opt
-Obsoletes:     euca-axis2c   < 1.6.0-2
-Obsoletes:     euca-rampartc < 1.3.0-7
-
-BuildRoot:     %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-
-Source0:       %{name}-%{version}%{?tar_suffix}.tar.gz
-Source1:       cloud-lib.tar.gz
+Source0:       %{name}-%{version}.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
-Source2:       euca-WSDL2C.sh
-
-# Eliminate the redundant "common" config section in drbd.conf
-Patch1:        eucalyptus-3.0.0-drbd-common.patch
+Source1:       euca-WSDL2C.sh
+Source2:       jarlinks.txt
+Patch0:        eucalyptus-jgroups3.patch
+Patch1:        eucalyptus-jetty8.patch
+Patch2:        eucalyptus-no-reporting.patch
+Patch3:        eucalyptus-groovy18.patch
+Patch4:        eucalyptus-build-against-new-guava.patch
+Patch5:        eucalyptus-wso2-axis2.patch
+Patch6:        eucalyptus-log4j-fix.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -112,17 +102,14 @@ node controller (nc), storage controller (sc), or walrus packages as well.
 
 %package common-java
 Summary:      Elastic Utility Computing Architecture - ws java stack
-Group:        Applications/System
-
 Requires:     %{name} = %{version}-%{release}
 Requires:     jpackage-utils
 Requires:     java >= 1:1.6.0
 Requires:     lvm2
 Requires:     velocity
-Requires:     %{_sbindir}/euca_conf
 
-%provide_abi common-java
-
+Requires:       %{_sbindir}/euca_conf
+Requires(post): %{_sbindir}/euca_conf
 
 %description common-java
 Eucalyptus is a service overlay that implements elastic computing
@@ -134,24 +121,10 @@ This package contains the java WS stack.
 
 %package walrus
 Summary:      Elastic Utility Computing Architecture - walrus
-Group:        Applications/System
-
 Requires:     %{name}             = %{version}-%{release}
 Requires:     %{name}-common-java = %{version}-%{release}
-%if 0%{?rhel}
-# CentOS Extras and ELRepo have differing package names, but compatible Provides
-#
-# Watch out for yum pulling in modules for the wrong kernel on systems that run
-# kernel-xen, kernel-PAE, etc.
-Requires:     drbd83
-Requires:     drbd83-kmod
-%endif
-%if 0%{?fedora}
 Requires:     drbd-utils
-%endif
 Requires:     lvm2
-
-%provide_abi walrus
 
 %description walrus
 Eucalyptus is a service overlay that implements elastic computing
@@ -165,15 +138,11 @@ cloud controller.
 
 %package sc
 Summary:      Elastic Utility Computing Architecture - storage controller
-Group:        Applications/System
-
 Requires:     %{name}             = %{version}-%{release}
 Requires:     %{name}-common-java = %{version}-%{release}
 Requires:     lvm2
-Requires:     %{euca_iscsi_client}
+Requires:     vblade
 Requires:     %{euca_iscsi_server}
-
-%provide_abi sc
 
 %description sc
 Eucalyptus is a service overlay that implements elastic computing
@@ -187,31 +156,12 @@ alongside the cluster controller.
 
 %package cloud
 Summary:      Elastic Utility Computing Architecture - cloud controller
-Group:        Applications/System
-
 Requires:     %{name}                     = %{version}-%{release}
 Requires:     %{name}-common-java%{?_isa} = %{version}-%{release}
-# bc is needed for /etc/eucalyptus/cloud.d/init.d/01_pg_kernel_params
-Requires:     bc
 Requires:     euca2ools >= 2.0
 Requires:     lvm2
 Requires:     perl(Getopt::Long)
-%if 0%{?fedora}
-Requires:     postgresql
 Requires:     postgresql-server
-%else
-Requires:     postgresql91
-Requires:     postgresql91-server
-%endif
-
-# For reporting web UI
-%if 0%{?el5}
-Requires:     bitstream-vera-fonts
-%else
-Requires:     dejavu-serif-fonts
-%endif
-
-%provide_abi cloud
 
 %description cloud
 Eucalyptus is a service overlay that implements elastic computing
@@ -225,8 +175,6 @@ the cloud clients.
 
 %package cc
 Summary:      Elastic Utility Computing Architecture - cluster controller
-Group:        Applications/System
-
 Requires:     %{name}    = %{version}-%{release}
 Requires:     %{name}-gl = %{version}-%{release}
 Requires:     bridge-utils
@@ -235,8 +183,7 @@ Requires:     vtun
 Requires:     %{euca_dhcp}
 Requires:     %{euca_httpd}
 Requires:     %{_sbindir}/euca_conf
-
-%provide_abi cc
+Group:        Applications/System
 
 %description cc
 Eucalyptus is a service overlay that implements elastic computing
@@ -249,8 +196,6 @@ handles a group of node controllers.
 
 %package nc
 Summary:      Elastic Utility Computing Architecture - node controller
-Group:        Applications/System
-
 Requires:     %{name}    = %{version}-%{release}
 Requires:     %{name}-gl = %{version}-%{release}
 Requires:     bridge-utils
@@ -260,16 +205,22 @@ Requires:     euca2ools >= 2.0
 Requires:     coreutils
 Requires:     e2fsprogs
 Requires:     file
+%if 0%{?fedora}
+# This doesn't actually work yet, but grub1 cannot be installed via yum,
+# since it is obsoleted by the grub2 package.
+Requires:     grub2
+%else
+Requires:     grub
+%endif
 Requires:     parted
 Requires:     util-linux
 Requires:     %{euca_curl}
 Requires:     %{euca_httpd}
 Requires:     %{euca_hypervisor}
-Requires:     %{euca_iscsi_client}
 Requires:     %{euca_libvirt}
+Requires:     %{euca_iscsi_client}
 Requires:     %{_sbindir}/euca_conf
-
-%provide_abi nc
+Group:        Applications/System
 
 %description nc
 Eucalyptus is a service overlay that implements elastic computing
@@ -282,12 +233,9 @@ component handles instances.
 
 %package gl
 Summary:      Elastic Utility Computing Architecture - log service
-Group:        Applications/System
-
 Requires:     %{name} = %{version}-%{release}
 Requires:     %{euca_httpd}
-
-%provide_abi gl
+Group:        Applications/System
 
 %description gl
 Eucalyptus is a service overlay that implements elastic computing
@@ -300,14 +248,10 @@ This package contains the internal log service of eucalyptus.
 %package admin-tools
 Summary:      Elastic Utility Computing Architecture - admin CLI tools
 License:      BSD
-Group:        Applications/System
-
 Requires:     %{name} = %{version}-%{release}
 Requires:     python%{?pybasever}-eucadmin = %{version}-%{release}
 Requires:     rsync
-
-%provide_abi admin-tools
-
+Group:        Applications/System
 %if ! 0%{?el5}
 BuildArch:    noarch
 %endif
@@ -324,18 +268,10 @@ Eucalyptus cluster.
 %package -n python%{?pybasever}-eucadmin
 Summary:      Elastic Utility Computing Architecture - administration Python library
 License:      BSD
-Group:        Development/Libraries
-
+Requires:     PyGreSQL
 Requires:     python%{?pybasever}-boto >= 2.1
 Requires:     rsync
-%if 0%{?el5}
-Requires:     postgresql91-python26
-%else
-Requires:     PyGreSQL
-%endif
-
-%provide_abi python%{?pybasever}-eucadmin
-
+Group:        Development/Libraries
 %if ! 0%{?el5}
 BuildArch:    noarch
 %endif
@@ -350,46 +286,54 @@ This package contains the Python library used by Eucalyptus administration
 tools.  It is neither intended nor supported for use by any other programs.
 
 %prep
-%setup -q -n %{name}-%{version}%{?tar_suffix}
-
-%if 0%{?rhel} >= 6 || 0%{?fedora}
+%setup -q
+%patch0 -p1
 %patch1 -p1
-%endif
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+
+# disable modules by removing their build.xml files
+rm clc/modules/reporting/build.xml
+rm clc/modules/www/build.xml
 
 %build
 export CFLAGS="%{optflags}"
 
 # Eucalyptus does not assign the usual meaning to prefix and other standard
 # configure variables, so we can't realistically use %%configure.
-./configure --with-axis2=%{_datadir}/axis2-* --with-axis2c=%{axis2c_home} --with-wsdl2c-sh=%{S:2} --enable-debug --prefix=/ --with-apache2-module-dir=%{_libdir}/httpd/modules --with-db-home=/usr/pgsql-9.1 --with-extra-version=%{release} --with-vddk=/opt/packages/vddk
+./configure --with-axis2=%{_datadir}/axis2-* --with-axis2c=%{axis2c_home} --with-wsdl2c-sh=%{S:1} --enable-debug --prefix=/ --with-apache2-module-dir=%{_libdir}/httpd/modules --with-db-home=/usr
 
 # Untar the bundled cloud-lib Java dependencies.
 mkdir clc/lib
-tar xf %{S:1} -C clc/lib
+for x in $( cat %{S:2} ); 
+do 
+  if [ ! -e $x ]; then
+    echo "Could not find $x"
+    exit 1
+  fi
+  ln -s $x clc/lib/;
+done
+
 
 # FIXME: storage/Makefile breaks with parallel make
-make # %{?_smp_mflags}
+LANG=en_US.UTF-8 make # %{?_smp_mflags}
 
 %install
 [ $RPM_BUILD_ROOT != "/" ] && rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
+for x in $( cat %{S:2} );
+do
+  rm $RPM_BUILD_ROOT/usr/share/eucalyptus/$( basename $x )
+  ln -s $x $RPM_BUILD_ROOT/usr/share/eucalyptus/
+done
 
-sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
-       -e 's#.*HYPERVISOR=.*#HYPERVISOR="%{euca_hypervisor}"#' \
-       -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="/var/lib/eucalyptus/instances"#' \
-       -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="%{euca_bridge}"#' \
-       $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
-
-# RHEL does not include support for SCSI emulation in KVM.
-%if 0%{?rhel}
 sed -i 's#.*USE_VIRTIO_DISK=.*#USE_VIRTIO_DISK="1"#' $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
 sed -i 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
-%endif
 
-# Use patched dhcpd on el6
-%if 0%{?el6}
-sed -i 's#.*VNET_DHCPDAEMON=.*#VNET_DHCPDAEMON="/usr/sbin/dhcpd41"#' $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
-%endif
+sed -i 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="%{euca_bridge}"#' $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
 
 # Eucalyptus's build scripts do not respect initrddir
 if [ %{_initrddir} != /etc/init.d ]; then
@@ -410,37 +354,20 @@ install -d -m 0771 $RPM_BUILD_ROOT/var/lib/eucalyptus/instances
 touch $RPM_BUILD_ROOT/etc/eucalyptus/httpd-{cc,nc,tmp}.conf
 
 # Add PolicyKit config on systems that support it
-%if 0%{?fedora} || 0%{?rhel} >= 6
 mkdir -p $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d
 cp -p tools/eucalyptus-nc-libvirt.pkla $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
-%endif
-
-# Work around a regression in libvirtd.conf file handling that appears
-# in at least RHEL 6.2
-# https://www.redhat.com/archives/libvirt-users/2011-July/msg00039.html
-mkdir $RPM_BUILD_ROOT/var/lib/eucalyptus/.libvirt
-touch $RPM_BUILD_ROOT/var/lib/eucalyptus/.libvirt/libvirtd.conf
-
-%clean
-[ $RPM_BUILD_ROOT != "/" ] && rm -rf $RPM_BUILD_ROOT
 
 %files
-%defattr(-,root,root,-)
 %doc LICENSE INSTALL README CHANGELOG
-
-%dir /etc/eucalyptus
-%config(noreplace) /etc/eucalyptus/eucalyptus.conf
+/etc/eucalyptus/eucalyptus.conf
 /etc/eucalyptus/eucalyptus-version
 /etc/eucalyptus/httpd.conf
 %ghost /etc/eucalyptus/httpd-tmp.conf
-
-%attr(-,root,eucalyptus) %dir /usr/lib/eucalyptus
 %attr(4750,root,eucalyptus) /usr/lib/eucalyptus/euca_mountwrap
 %attr(4750,root,eucalyptus) /usr/lib/eucalyptus/euca_rootwrap
 
 /usr/sbin/euca_sync_key
 
-%dir /usr/share/eucalyptus
 /usr/share/eucalyptus/add_key.pl
 /usr/share/eucalyptus/connect_iscsitarget.pl
 /usr/share/eucalyptus/create-loop-devices
@@ -457,55 +384,36 @@ touch $RPM_BUILD_ROOT/var/lib/eucalyptus/.libvirt/libvirtd.conf
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/upgrade
 # Can this file go into a single-component package?  What uses it?
 /var/lib/eucalyptus/keys/cc-client-policy.xml
-%attr(-,eucalyptus,eucalyptus) %dir /var/log/eucalyptus
-%attr(-,eucalyptus,eucalyptus) %dir /var/run/eucalyptus
-
+%dir /var/log/eucalyptus
+%dir /var/run/eucalyptus
 
 %files common-java
-%defattr(-,root,root,-)
 %{_initrddir}/eucalyptus-cloud
 # cloud.d contains random stuff used by every Java component.  Most of it
 # probably belongs in /usr/share, but moving it will be painful.
-%dir /etc/eucalyptus/cloud.d
-/etc/eucalyptus/cloud.d/conf/
-/etc/eucalyptus/cloud.d/drbd/
-/etc/eucalyptus/cloud.d/eucalyptus-web-default.properties
-/etc/eucalyptus/cloud.d/eucalyptus-web.properties
-/etc/eucalyptus/cloud.d/gwt-web.xml
-%dir /etc/eucalyptus/cloud.d/init.d
-/etc/eucalyptus/cloud.d/jmx/
-/etc/eucalyptus/cloud.d/reports/
-/etc/eucalyptus/cloud.d/scripts/
-/etc/eucalyptus/cloud.d/security.policy
-/etc/eucalyptus/cloud.d/upgrade/
-/etc/eucalyptus/cloud.d/www/
+/etc/eucalyptus/cloud.d/
 /usr/sbin/eucalyptus-cloud
 /usr/share/eucalyptus/*jar*
-%doc /usr/share/eucalyptus/licenses/
+# %doc /usr/share/eucalyptus/licenses/
 %ghost /var/lib/eucalyptus/services
 %attr(-,eucalyptus,eucalyptus) /var/lib/eucalyptus/webapps/
 
 %files cloud
-%defattr(-,root,root,-)
-/etc/eucalyptus/cloud.d/init.d/01_pg_kernel_params
 /usr/sbin/euca-lictool
 /usr/share/eucalyptus/lic_default
 /usr/share/eucalyptus/lic_template
 
 %files walrus
-%defattr(-,root,root,-)
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/bukkits
 /etc/eucalyptus/drbd.conf.example
 
 %files sc
-%defattr(-,root,root,-)
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/volumes
 /usr/share/eucalyptus/connect_iscsitarget_sc.pl
 /usr/share/eucalyptus/disconnect_iscsitarget_sc.pl
 /usr/lib/eucalyptus/liblvm2control.so
 
 %files cc
-%defattr(-,root,root,-)
 %{_initrddir}/eucalyptus-cc
 %{axis2c_home}/services/EucalyptusCC/
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/CC
@@ -517,7 +425,6 @@ touch $RPM_BUILD_ROOT/var/lib/eucalyptus/.libvirt/libvirtd.conf
 /var/lib/eucalyptus/keys/nc-client-policy.xml
 
 %files nc
-%defattr(-,root,root,-)
 %config(noreplace) /etc/eucalyptus/libvirt.xsl
 %dir /etc/eucalyptus/nc-hooks
 /etc/eucalyptus/nc-hooks/example.sh
@@ -533,17 +440,15 @@ touch $RPM_BUILD_ROOT/var/lib/eucalyptus/.libvirt/libvirtd.conf
 /usr/share/eucalyptus/get_sys_info
 /usr/share/eucalyptus/get_xen_info
 /usr/share/eucalyptus/partition2disk
-%attr(-,eucalyptus,eucalyptus) /var/lib/eucalyptus/.libvirt/
-%if 0%{?fedora} || 0%{?rhel} >= 6
 /var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
-%endif
 
 %files gl
-%defattr(-,root,root,-)
 %{axis2c_home}/services/EucalyptusGL/
 
+# NB: the vmware tools packaged here only work against Eucalyptus
+# Enterprise Edition, but the client and server may be different
+# systems, so it's reasonable to package these commands here.
 %files admin-tools
-%defattr(-,root,root,-)
 %{_sbindir}/euca_conf
 %{_sbindir}/euca-configure-vmware
 %{_sbindir}/euca-deregister-arbitrator
@@ -576,7 +481,6 @@ touch $RPM_BUILD_ROOT/var/lib/eucalyptus/.libvirt/libvirtd.conf
 %{_sbindir}/euca-register-walrus
 
 %files -n python%{?pybasever}-eucadmin
-%defattr(-,root,root,-)
 %{python_sitelib}/eucadmin*
 
 %pre
@@ -622,14 +526,22 @@ fi
 exit 0
 
 %post
+udevadm control --reload-rules
+
+/usr/sbin/euca_conf -d / --instances /var/lib/eucalyptus/instances --hypervisor %{euca_hypervisor} --bridge %{euca_bridge}
+
 if [ "$1" = "2" ]; then
     if [ -f /tmp/eucaback.dir ]; then
         BACKDIR=`cat /tmp/eucaback.dir`
         if [ -d "$BACKDIR" ]; then
             /usr/share/eucalyptus/euca_upgrade --old $BACKDIR --new / --conf >/var/log/eucalyptus/upgrade-config.log 2>&1
+            /usr/sbin/euca_conf --setup
         fi
     fi
 fi
+
+# Final setup and set the new user
+/usr/sbin/euca_conf --setup --user eucalyptus
 
 # Clean up after old releases that didn't enumerate all admin-tools files
 rm -rf /usr/sbin/euca_admin
@@ -639,18 +551,8 @@ exit 0
 %post common-java
 chkconfig --add eucalyptus-cloud
 
-%post cloud
-%if 0%{?el5}
-if [ -e /etc/sysconfig/system-config-securitylevel ]; then
-    if ! grep -q 8773:tcp /etc/sysconfig/system-config-securitylevel; then
-        echo "--port=8773:tcp" >> /etc/sysconfig/system-config-securitylevel
-        echo "--port=8443:tcp" >> /etc/sysconfig/system-config-securitylevel
-    fi
-fi
-%endif
-exit 0
-
 %post sc
+/usr/bin/killall -9 vblade >/dev/null 2>&1
 if [ -e %{_initrddir}/tgtd ]; then
     chkconfig --add tgtd
     /sbin/service tgtd start
@@ -659,14 +561,6 @@ exit 0
 
 %post cc
 chkconfig --add eucalyptus-cc
-%if 0%{?el5}
-if [ -e /etc/sysconfig/system-config-securitylevel ]; then
-    if ! grep -q 8774:tcp /etc/sysconfig/system-config-securitylevel; then
-        echo "--port=8774:tcp" >> /etc/sysconfig/system-config-securitylevel
-    fi
-fi
-%endif
-exit 0
 
 %post nc
 if [ -e %{_initrddir}/libvirtd ]; then
@@ -674,27 +568,31 @@ if [ -e %{_initrddir}/libvirtd ]; then
     /sbin/service libvirtd restart
 fi
 chkconfig --add eucalyptus-nc
-%if 0%{?fedora} || 0%{?rhel} >= 6
-    usermod -a -G kvm eucalyptus
-%endif
-%if 0%{?el5}
-    if [ -e /etc/sysconfig/system-config-securitylevel ]; then
-        if ! grep -q 8775:tcp /etc/sysconfig/system-config-securitylevel; then
-        echo "--port=8775:tcp" >> /etc/sysconfig/system-config-securitylevel
-    fi
-fi
-%endif
-exit 0
+usermod -a -G kvm eucalyptus
 
-%if 0%{?el5}
 %preun cloud
 if [ "$1" = "0" ]; then
-    if [ -e /etc/sysconfig/system-config-securitylevel ]; then
-        sed -e '/^--port=8773/ d' -e '/^--port=8443/ d' -i /etc/sysconfig/system-config-securitylevel
+    if [ -e %{_initrddir}/eucalyptus-cloud -a -e /etc/eucalyptus/eucalyptus.conf ]; then
+        /sbin/service eucalyptus-cloud restart || true
     fi
 fi
 exit 0
-%endif
+
+%preun walrus
+if [ "$1" = "0" ]; then
+    if [ -e %{_initrddir}/eucalyptus-cloud -a -e /etc/eucalyptus/eucalyptus.conf ]; then
+        /sbin/service eucalyptus-cloud restart || true
+    fi
+fi
+exit 0
+
+%preun sc
+if [ "$1" = "0" ]; then
+    if [ -e %{_initrddir}/eucalyptus-cloud -a -e /etc/eucalyptus/eucalyptus.conf ]; then
+        /sbin/service eucalyptus-cloud restart || true
+    fi
+fi
+exit 0
 
 %preun common-java
 if [ "$1" = "0" ]; then
@@ -725,56 +623,15 @@ if [ "$1" = "0" ]; then
         /sbin/service eucalyptus-nc stop
     fi
     chkconfig --del eucalyptus-nc
-%if 0%{?el5}
-    if [ -e /etc/sysconfig/system-config-securitylevel ]; then
-        sed -i '/^--port=8775/ d' /etc/sysconfig/system-config-securitylevel
-    fi
-%endif
 fi
 exit 0
 
 %changelog
-* Mon Jul 30 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.2.0-0
-- Version bump
+* Mon Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-1
+- Experimental Fedora build
 
-* Fri Jun  1 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1-0
-- Moved 01_pg_kernel_params script to -cloud package
-
-* Wed May 30 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1-0
-- Dropped now-nonexistent volume management scripts
-
-* Tue May 29 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1-0
-- Treat eucalyptus.conf like a config file
-
-* Fri May 25 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1-0
-- Depend on bc so the eucalyptus-cloud init script works
-
-* Wed Apr 23 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1-0
-- Fixed bundled lib tarball explosion
-- Swapped in configure --with-db-home
-- Added extra version info
-- Cleaned up extraneous build stuff
-
-* Wed Apr 16 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1-0
-- Dropped old udev reload
-
-* Fri Apr 11 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1-0
-- Depend on postgres, not mysql
-
-* Mon Mar 19 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.0.1-2
-- Added iSCSI client dependency to SC package
-
-* Thu Mar 15 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.0.1-1
-- Update to Eucalyptus 3.0.1 RC 1
-
-* Wed Feb  8 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.0.0-3
-- Update to Eucalyptus 3.0.0 RC 3
-
-* Tue Feb  7 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.0.0-2
-- Update to Eucalyptus 3.0.0 RC 2
-
-* Thu Feb  2 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.0.0-1
-- Update to Eucalyptus 3.0.0 RC 1
+* Thu Jan 19 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.0.0-1
+- Update to Eucalyptus 3.0
 
 * Tue Jun  1 2010 Eucalyptus Release Engineering <support@eucalyptus.com> - 2.0.0-1
 - Version 2.0 of Eucalyptus Enterprise Cloud

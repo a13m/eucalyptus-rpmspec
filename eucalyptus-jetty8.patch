@@ -1,0 +1,36 @@
+diff -ur eucalyptus-3.bzr1505/clc/modules/www/src/main/java/com/eucalyptus/www/Redirect.java eucalyptus-3.bzr1505.new/clc/modules/www/src/main/java/com/eucalyptus/www/Redirect.java
+--- eucalyptus-3.bzr1505/clc/modules/www/src/main/java/com/eucalyptus/www/Redirect.java	2012-02-09 02:24:49.000000000 -0500
++++ eucalyptus-3.bzr1505.new/clc/modules/www/src/main/java/com/eucalyptus/www/Redirect.java	2012-02-09 04:33:05.473353310 -0500
+@@ -7,7 +7,7 @@
+ import javax.servlet.http.HttpServletResponse;
+ 
+ import org.apache.log4j.Logger;
+-import org.mortbay.jetty.handler.rewrite.Rule;
++import org.eclipse.jetty.rewrite.handler.Rule;
+ import com.eucalyptus.bootstrap.HttpServerBootstrapper;
+ import com.eucalyptus.component.ServiceConfiguration;
+ import com.eucalyptus.component.Topology;
+diff -ur eucalyptus-3.bzr1505/clc/modules/msgs/src/main/java/com/eucalyptus/empyrean/EmpyreanTransactionManager.java eucalyptus-3.bzr1505.new/clc/modules/msgs/src/main/java/com/eucalyptus/empyrean/EmpyreanTransactionManager.java
+--- eucalyptus-3.bzr1505/clc/modules/msgs/src/main/java/com/eucalyptus/empyrean/EmpyreanTransactionManager.java	2012-02-09 02:24:49.000000000 -0500
++++ eucalyptus-3.bzr1505.new/clc/modules/msgs/src/main/java/com/eucalyptus/empyrean/EmpyreanTransactionManager.java	2012-02-09 05:31:39.500028619 -0500
+@@ -13,7 +13,7 @@
+ import com.eucalyptus.bootstrap.SystemIds;
+ import com.eucalyptus.system.SubDirectory;
+ 
+-public class EmpyreanTransactionManager extends org.mortbay.component.AbstractLifeCycle implements org.jboss.cache.transaction.TransactionManagerLookup, org.hibernate.transaction.TransactionManagerLookup {
++public class EmpyreanTransactionManager extends org.eclipse.jetty.util.component.AbstractLifeCycle implements org.jboss.cache.transaction.TransactionManagerLookup, org.hibernate.transaction.TransactionManagerLookup {
+ //  public static final String JNDI_NAME = "eucalyptusTransactionManager";
+   private static Logger             LOG = Logger.getLogger( EmpyreanTransactionManager.class );
+   private static Context            ctx = getContext( );
+diff -ur eucalyptus-3.1.0/clc/modules/msgs/src/main/java/com/eucalyptus/ws/handlers/http/NioHttpDecoder.java eucalyptus-3.1.0.new/clc/modules/msgs/src/main/java/com/eucalyptus/ws/handlers/http/NioHttpDecoder.java
+--- eucalyptus-3.1.0/clc/modules/msgs/src/main/java/com/eucalyptus/ws/handlers/http/NioHttpDecoder.java	2012-06-19 14:41:48.000000000 -0400
++++ eucalyptus-3.1.0.new/clc/modules/msgs/src/main/java/com/eucalyptus/ws/handlers/http/NioHttpDecoder.java	2012-06-19 14:41:48.000000000 -0400
+@@ -64,7 +64,7 @@
+ import org.jboss.netty.handler.codec.http.HttpResponse;
+ import org.jboss.netty.handler.codec.http.HttpVersion;
+ import org.jboss.netty.handler.codec.replay.ReplayingDecoder;
+-import org.mortbay.log.Log;
++import org.eclipse.jetty.util.log.Log;
+ 
+ import com.eucalyptus.context.Context;
+ import com.eucalyptus.context.Contexts;
