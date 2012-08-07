@@ -26,7 +26,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       2%{?dist}
+Release:       3%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -648,6 +648,9 @@ fi
 exit 0
 
 %changelog
+* Tue Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3
+- Release bump for additional jar links
+
 * Mon Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-2
 - Sync several fixes from official 3.x spec file
 
