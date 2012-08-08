@@ -26,7 +26,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       4%{?dist}
+Release:       5%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -223,7 +223,124 @@ Requires:     %{name} = %{version}-%{release}
 Requires:     jpackage-utils
 Requires:     java >= 1:1.6.0
 Requires:     lvm2
-Requires:     velocity
+Requires: ant
+Requires: antlr-tool
+Requires: apache-commons-beanutils
+Requires: apache-commons-cli
+Requires: apache-commons-codec
+Requires: apache-commons-collections
+Requires: apache-commons-compress
+Requires: apache-commons-digester
+Requires: apache-commons-discovery
+Requires: apache-commons-fileupload
+Requires: apache-commons-io
+Requires: apache-commons-jxpath
+Requires: apache-commons-lang
+Requires: apache-commons-logging
+Requires: apache-commons-pool
+Requires: avalon-framework
+Requires: avalon-logkit
+Requires: axiom
+Requires: backport-util-concurrent
+Requires: batik
+Requires: bcel
+Requires: bouncycastle
+Requires: bsf
+Requires: btm
+Requires: cglib
+Requires: dnsjava
+Requires: dom4j
+Requires: ehcache-core
+Requires: ezmorph
+Requires: geronimo-ejb
+Requires: geronimo-jms
+Requires: geronimo-jta
+Requires: groovy
+Requires: guava
+Requires: ha-jdbc
+Requires: hamcrest12
+Requires: hibernate3
+Requires: hibernate3-ehcache
+Requires: hibernate3-entitymanager
+Requires: hibernate3-jbosscache
+Requires: hibernate3-proxool
+Requires: hibernate-commons-annotations
+Requires: hibernate-jpa-2.0-api
+Requires: hsqldb
+Requires: jakarta-commons-httpclient
+Requires: javamail
+Requires: javassist
+Requires: java-uuid-generator
+Requires: jaxen
+Requires: jbosscache-core
+Requires: jboss-common-core
+Requires: jboss-connector-1.6-api
+Requires: jboss-logging
+Requires: jboss-marshalling
+Requires: jcip-annotations
+Requires: jettison
+Requires: jetty
+Requires: jetty-ajp
+Requires: jetty-annotations
+Requires: jetty-client
+Requires: jetty-continuation
+Requires: jetty-deploy
+Requires: jetty-http
+Requires: jetty-io
+Requires: jetty-jmx
+Requires: jetty-jndi
+Requires: jetty-overlay-deployer
+Requires: jetty-plus
+Requires: jetty-policy
+Requires: jetty-rewrite
+Requires: jetty-security
+Requires: jetty-server
+Requires: jetty-servlet
+Requires: jetty-servlets
+Requires: jetty-util
+Requires: jetty-webapp
+Requires: jetty-websocket
+Requires: jetty-xml
+Requires: jgroups212
+Requires: jibx
+Requires: jna
+Requires: jsch
+Requires: json-lib
+Requires: jsr-305
+Requires: junit
+Requires: log4j
+Requires: mule
+Requires: mule-module-builders
+Requires: mule-module-client
+Requires: mule-module-spring-config
+Requires: mule-module-xml
+Requires: mule-transport-vm
+Requires: netty31
+Requires: objectweb-asm
+Requires: postgresql-jdbc
+Requires: proxool
+Requires: quartz
+Requires: regexp
+Requires: slf4j
+Requires: springframework
+Requires: springframework-beans
+Requires: springframework-context
+Requires: springframework-context-support
+Requires: springframework-expression
+Requires: springframework-web
+Requires: stax2-api
+Requires: tomcat-el-2.2-api
+Requires: tomcat-servlet-3.0-api
+Requires: velocity
+Requires: woodstox-core
+Requires: wsdl4j
+Requires: wss4j
+Requires: xalan-j2
+Requires: xerces-j2
+Requires: xml-commons-apis
+Requires: xml-security
+Requires: xom
+Requires: xpp3
 Requires:     %{_sbindir}/euca_conf
 
 %provide_abi common-java
@@ -760,6 +877,9 @@ fi
 exit 0
 
 %changelog
+* Wed Aug 08 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-5
+- Add Requires for java packages
+
 * Wed Aug 08 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-4
 - Hibernate fixes
 
