@@ -26,7 +26,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       3%{?dist}
+Release:       3.2%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -102,6 +102,7 @@ BuildRequires: hsqldb
 BuildRequires: jakarta-commons-httpclient
 BuildRequires: javamail
 BuildRequires: javassist
+BuildRequires: java-uuid-generator
 BuildRequires: jaxen
 BuildRequires: jbosscache-core
 BuildRequires: jboss-common-core
@@ -110,8 +111,18 @@ BuildRequires: jboss-logging
 BuildRequires: jboss-marshalling
 BuildRequires: jcip-annotations
 BuildRequires: jettison
-BuildRequires: jetty
+BuildRequires: jetty-client
+BuildRequires: jetty-continuation
+BuildRequires: jetty-deploy
+BuildRequires: jetty-http
+BuildRequires: jetty-io
+BuildRequires: jetty-rewrite
+BuildRequires: jetty-security
+BuildRequires: jetty-server
 BuildRequires: jetty-servlet
+BuildRequires: jetty-util
+BuildRequires: jetty-webapp
+BuildRequires: jetty-xml
 BuildRequires: jgroups212
 BuildRequires: jibx
 BuildRequires: jna
@@ -137,6 +148,7 @@ BuildRequires: springframework
 BuildRequires: springframework-beans
 BuildRequires: springframework-context
 BuildRequires: springframework-context-support
+BuildRequires: springframework-expression
 BuildRequires: springframework-web
 BuildRequires: stax2-api
 BuildRequires: tomcat-el-2.2-api
@@ -151,6 +163,7 @@ BuildRequires: xml-commons-apis
 BuildRequires: xml-security
 BuildRequires: xom
 BuildRequires: xpp3
+
 
 Requires:      %{euca_build_req}
 Requires:      %{euca_which}
@@ -175,6 +188,11 @@ Patch3:        eucalyptus-groovy18.patch
 Patch4:        eucalyptus-build-against-new-guava.patch
 Patch5:        eucalyptus-wso2-axis2.patch
 Patch6:        eucalyptus-log4j-fix.patch
+
+# Three separate patches to disable gwt
+Patch7:        eucalyptus-disable-gwt.patch
+Patch8:        eucalyptus-disable-gwt-in-buildxml.patch
+Patch9:        eucalyptus-disable-gwt-in-makefile.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -387,10 +405,13 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch4 -p1
 %patch5 -p1
 %patch6 -p1
+%patch7 -p1
+%patch8 -p1
+%patch9 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
-rm clc/modules/www/build.xml
+# rm clc/modules/www/build.xml
 
 %build
 export CFLAGS="%{optflags}"
@@ -416,7 +437,7 @@ LANG=en_US.UTF-8 make # %{?_smp_mflags}
 %install
 [ $RPM_BUILD_ROOT != "/" ] && rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
-for x in $( cat %{S:2} );
+for x in $( cat %{S:2} | grep -v junit4 );
 do
   rm $RPM_BUILD_ROOT/usr/share/eucalyptus/$( basename $x )
   ln -s $x $RPM_BUILD_ROOT/usr/share/eucalyptus/
@@ -721,6 +742,12 @@ fi
 exit 0
 
 %changelog
+* Tue Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3.2
+- Jetty 8 fixes
+
+* Tue Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3.1
+- Change gwt disablement to match debian
+
 * Tue Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3
 - Release bump for additional jar links
 

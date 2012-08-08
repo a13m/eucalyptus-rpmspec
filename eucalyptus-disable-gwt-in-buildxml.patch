@@ -1,0 +1,28 @@
+--- a/clc/modules/www/build.xml	2012-06-20 06:21:42.000000000 +0000
++++ b/clc/modules/www/build.xml	2012-06-29 11:59:29.000000000 +0000
+@@ -123,7 +123,7 @@
+ 	<target name="compile-src">
+     <mkdir dir="${build.dir}"/>
+     <mkdir dir="${test.dir}"/>
+-		<javac deprecation="false" srcdir="${src.dir}" destdir="${build.dir}" classpathref="gwtclasspath" failonerror="true" debug="true" target="1.5" />
++		<javac deprecation="false" srcdir="${src.dir}" excludes="com/eucalyptus/webui/**,com/eucalyptus/www/CommandServlet.java,com/eucalyptus/www/LoginServlet.java,com/eucalyptus/www/ReportServlet.java" destdir="${build.dir}" classpathref="gwtclasspath" failonerror="true" debug="true" target="1.5" />
+ 	</target>
+ 
+ 	<target name="clean">
+@@ -138,13 +138,15 @@
+     <delete dir="${gwt.war.build.dir}" />
+     <mkdir dir="${gwt.war.build.dir}" />
+     <mkdir dir="${gwt.war.dir}" />
++    <!--
+     <java classpathref="gwtcompilerclasspath" fork="true" failonerror="true" classname="com.google.gwt.dev.Compiler">
+       <jvmarg value="-Xmx1024m" />
+       <jvmarg value="-Xss1024k" />
+       <arg line="-war ${gwt.war.build.dir}" />
+       <arg line="com.eucalyptus.webui.EucalyptusWebInterface" />
+     </java>
+-    <war destfile="${gwt.war}" webxml="${conf.dir}/gwt-web.xml" basedir="${gwt.war.build.dir}/${gwt.module.rename}/" />
++    -->
++    <war destfile="${gwt.war}" webxml="${conf.dir}/gwt-web.xml" basedir="${gwt.war.build.dir}/" />
+   </target>
+ 
+   <target name="compile-gwt-debug" depends="check-src" unless="gwtc.notRequired">

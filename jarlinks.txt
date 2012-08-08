@@ -60,6 +60,7 @@
 /usr/share/java/hibernate3/hibernate-proxool.jar
 /usr/share/java/hsqldb.jar
 /usr/share/java/jakarta-commons-httpclient.jar
+/usr/share/java/java-uuid-generator.jar
 /usr/share/java/javassist.jar
 /usr/share/java/javamail/mail.jar
 /usr/share/java/jaxen.jar
@@ -71,6 +72,18 @@
 /usr/share/java/jboss-marshalling-river.jar
 /usr/share/java/jcip-annotations.jar
 /usr/share/java/jettison.jar
+/usr/share/java/jetty/jetty-client.jar
+/usr/share/java/jetty/jetty-continuation.jar
+/usr/share/java/jetty/jetty-deploy.jar
+/usr/share/java/jetty/jetty-http.jar
+/usr/share/java/jetty/jetty-io.jar
+/usr/share/java/jetty/jetty-rewrite.jar
+/usr/share/java/jetty/jetty-security.jar
+/usr/share/java/jetty/jetty-server.jar
+/usr/share/java/jetty/jetty-servlet.jar
+/usr/share/java/jetty/jetty-util.jar
+/usr/share/java/jetty/jetty-webapp.jar
+/usr/share/java/jetty/jetty-xml.jar
 /usr/share/java/jgroups212.jar
 /usr/share/java/jibx/bind.jar
 /usr/share/java/jibx/extras.jar
@@ -105,11 +118,6 @@
 /usr/share/java/xml-security.jar
 /usr/share/java/xom.jar
 /usr/share/java/xpp3.jar
-/usr/share/jetty/lib/jetty-client-8.1.2.v20120308.jar
-/usr/share/jetty/lib/jetty-http-8.1.2.v20120308.jar
-/usr/share/jetty/lib/jetty-util-8.1.2.v20120308.jar
-/usr/share/java/jetty/jetty-servlet.jar
-/usr/share/jetty/lib/jetty-rewrite-8.1.2.v20120308.jar
 /usr/share/java/mule/mule-module-xml.jar
 /usr/share/java/mule/mule-transport-vm.jar
 /usr/share/java/mule/mule-module-builders.jar
@@ -120,6 +128,7 @@
 /usr/share/java/springframework/spring-context.jar
 /usr/share/java/springframework/spring-context-support.jar
 /usr/share/java/springframework/spring-core.jar
+/usr/share/java/springframework/spring-expression.jar
 /usr/share/java/springframework/spring-web.jar
 /usr/share/java/qname.jar
 /usr/share/java/wsdl4j.jar

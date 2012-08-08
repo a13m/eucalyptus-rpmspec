@@ -186,14 +186,6 @@ diff --git a/clc/modules/www/src/main/java/com/eucalyptus/bootstrap/HttpServerBo
 index 2b9994e..505d7c2 100644
 --- a/clc/modules/www/src/main/java/com/eucalyptus/bootstrap/HttpServerBootstrapper.java
 +++ b/clc/modules/www/src/main/java/com/eucalyptus/bootstrap/HttpServerBootstrapper.java
-@@ -62,6 +62,7 @@ package com.eucalyptus.bootstrap;
- 
- import static com.eucalyptus.crypto.util.SslSetup.getEnabledCipherSuites;
- import java.io.File;
-+import java.io.FileNotFoundException;
- import java.io.IOException;
- import java.net.URL;
- import org.apache.log4j.Logger;
 @@ -126,6 +127,14 @@ public class HttpServerBootstrapper extends Bootstrapper {
      jettyConfig.configure( jettyServer );
    }
