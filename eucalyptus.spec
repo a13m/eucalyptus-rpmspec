@@ -26,7 +26,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       3.2%{?dist}
+Release:       4%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -111,17 +111,27 @@ BuildRequires: jboss-logging
 BuildRequires: jboss-marshalling
 BuildRequires: jcip-annotations
 BuildRequires: jettison
+BuildRequires: jetty
+BuildRequires: jetty-ajp
+BuildRequires: jetty-annotations
 BuildRequires: jetty-client
 BuildRequires: jetty-continuation
 BuildRequires: jetty-deploy
 BuildRequires: jetty-http
 BuildRequires: jetty-io
+BuildRequires: jetty-jmx
+BuildRequires: jetty-jndi
+BuildRequires: jetty-overlay-deployer
+BuildRequires: jetty-plus
+BuildRequires: jetty-policy
 BuildRequires: jetty-rewrite
 BuildRequires: jetty-security
 BuildRequires: jetty-server
 BuildRequires: jetty-servlet
+BuildRequires: jetty-servlets
 BuildRequires: jetty-util
 BuildRequires: jetty-webapp
+BuildRequires: jetty-websocket
 BuildRequires: jetty-xml
 BuildRequires: jgroups212
 BuildRequires: jibx
@@ -164,7 +174,6 @@ BuildRequires: xml-security
 BuildRequires: xom
 BuildRequires: xpp3
 
-
 Requires:      %{euca_build_req}
 Requires:      %{euca_which}
 Requires:      libselinux-python
@@ -193,6 +202,10 @@ Patch6:        eucalyptus-log4j-fix.patch
 Patch7:        eucalyptus-disable-gwt.patch
 Patch8:        eucalyptus-disable-gwt-in-buildxml.patch
 Patch9:        eucalyptus-disable-gwt-in-makefile.patch
+
+# Hibernate patches for debian
+Patch10:       eucalyptus-pg-hibernate.patch
+Patch11:       eucalyptus-hibernate-3.6.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -408,10 +421,15 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch7 -p1
 %patch8 -p1
 %patch9 -p1
+%patch10 -p1
+# %patch11 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
 # rm clc/modules/www/build.xml
+
+# remove a class which depends on junit
+rm clc/modules/core/src/main/java/edu/ucsb/eucalyptus/util/XMLParserTest.java
 
 %build
 export CFLAGS="%{optflags}"
@@ -742,13 +760,16 @@ fi
 exit 0
 
 %changelog
-* Tue Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3.2
+* Wed Aug 08 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-4
+- Hibernate fixes
+
+* Tue Aug 07 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3.2
 - Jetty 8 fixes
 
-* Tue Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3.1
+* Tue Aug 07 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3.1
 - Change gwt disablement to match debian
 
-* Tue Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3
+* Tue Aug 07 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-3
 - Release bump for additional jar links
 
 * Mon Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-2

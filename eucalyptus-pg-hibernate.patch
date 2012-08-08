@@ -1,0 +1,61 @@
+diff --git a/clc/modules/cluster-manager/src/main/java/com/eucalyptus/keys/SshKeyPair.java b/clc/modules/cluster-manager/src/main/java/com/eucalyptus/keys/SshKeyPair.java
+index 868a396..495112d 100644
+--- a/clc/modules/cluster-manager/src/main/java/com/eucalyptus/keys/SshKeyPair.java
++++ b/clc/modules/cluster-manager/src/main/java/com/eucalyptus/keys/SshKeyPair.java
+@@ -79,6 +79,8 @@ import com.eucalyptus.component.ComponentIds;
+ import com.eucalyptus.component.id.Eucalyptus;
+ import com.eucalyptus.util.FullName;
+ import com.eucalyptus.util.OwnerFullName;
++import org.hibernate.annotations.Type;
++import org.hibernate.type.StringClobType;
+ 
+ @Entity
+ @javax.persistence.Entity
+@@ -91,6 +93,7 @@ public class SshKeyPair extends UserMetadata<SshKeyPair.State> implements KeyPai
+   }
+   
+   @Lob
++  @Type(type="org.hibernate.type.StringClobType")
+   @Column( name = "metadata_keypair_public_key" )
+   private String publicKey;
+   @Column( name = "metadata_keypair_finger_print" )
+diff --git a/clc/modules/cluster-manager/src/main/java/com/eucalyptus/blockstorage/Volume.java b/clc/modules/cluster-manager/src/main/java/com/eucalyptus/blockstorage/Volume.java
+index f92fafd..a96c01e 100644
+--- a/clc/modules/cluster-manager/src/main/java/com/eucalyptus/blockstorage/Volume.java
++++ b/clc/modules/cluster-manager/src/main/java/com/eucalyptus/blockstorage/Volume.java
+@@ -72,6 +72,8 @@ import javax.persistence.Transient;
+ import org.hibernate.annotations.Cache;
+ import org.hibernate.annotations.CacheConcurrencyStrategy;
+ import org.hibernate.annotations.Entity;
++import org.hibernate.annotations.Type;
++
+ import com.eucalyptus.auth.principal.UserFullName;
+ import com.eucalyptus.cloud.CloudMetadata.VolumeMetadata;
+ import com.eucalyptus.cloud.UserMetadata;
+@@ -96,8 +98,8 @@ public class Volume extends UserMetadata<State> implements VolumeMetadata {
+   private String   partition;     //TODO:GRZE: change to injected ref.
+   @Column( name = "metadata_volume_parentsnapshot" )
+   private String   parentSnapshot;
+-  @Lob
+-  @Column( name = "metadata_volume_remotedevice" )
++ 
++  @Transient
+   private String   remoteDevice;
+   @Column( name = "metadata_volume_localdevice" )
+   private String   localDevice;
+diff --git a/clc/modules/msgs/src/main/java/com/eucalyptus/entities/AbstractStatefulPersistent.java b/clc/modules/msgs/src/main/java/com/eucalyptus/entities/AbstractStatefulPersistent.java
+index 1442629..19ffbe3 100644
+--- a/clc/modules/msgs/src/main/java/com/eucalyptus/entities/AbstractStatefulPersistent.java
++++ b/clc/modules/msgs/src/main/java/com/eucalyptus/entities/AbstractStatefulPersistent.java
+@@ -83,8 +83,9 @@ public abstract class AbstractStatefulPersistent<STATE extends Enum<STATE>> exte
+   @Column( name = "metadata_last_state" )
+   @Enumerated( EnumType.STRING )
+   STATE                     lastState;
+-  @Lob
+-  @Column( name = "metadata_state_change_stack" )
++//  @Lob
++//  @Column( name = "metadata_state_change_stack" )
++  @Transient
+   protected String          stateChangeStack;
+   @Column( name = "metadata_display_name" )
+   protected String          displayName;
