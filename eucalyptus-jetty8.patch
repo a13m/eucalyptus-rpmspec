@@ -106,19 +106,24 @@ diff -ur eucalyptus-3.1.0/clc/modules/www.orig/src/main/resources/eucalyptus-jet
    <Call name="addConnector">
      <Arg>
        <New class="com.eucalyptus.bootstrap.HttpServerBootstrapper$ConfiguredSslSelectChannelConnector">
-@@ -78,11 +78,9 @@
+@@ -77,14 +77,12 @@
+         <Set name="password">eucalyptus</Set>
          <Set name="keyPassword">eucalyptus</Set>
          <Set name="trustPassword">eucalyptus</Set>
-         <Set name="ThreadPool">
+-        <Set name="ThreadPool">
 -          <New class="org.mortbay.thread.QueuedThreadPool">
++        <!-- Set name="ThreadPool">
 +          <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
              <Set name="minThreads">10</Set>
              <Set name="maxThreads">25</Set>
 -            <Set name="lowThreads">5</Set>
 -            <Set name="SpawnOrShrinkAt">2</Set>
            </New>
-         </Set>
+-        </Set>
++        </Set -->
        </New>
+     </Arg>
+   </Call>
 @@ -90,7 +90,7 @@
    </Call>
    <Call name="addConnector">
