@@ -59,3 +59,23 @@ index 1442629..19ffbe3 100644
    protected String          stateChangeStack;
    @Column( name = "metadata_display_name" )
    protected String          displayName;
+diff --git a/clc/modules/authentication/src/main/java/com/eucalyptus/auth/entities/CertificateEntity.java b/clc/modules/authentication/src/main/java/com/eucalyptus/auth/entities/CertificateEntity.java
+--- a/clc/modules/authentication/src/main/java/com/eucalyptus/auth/entities/CertificateEntity.java
++++ b/clc/modules/authentication/src/main/java/com/eucalyptus/auth/entities/CertificateEntity.java
+@@ -13,6 +13,8 @@
+ import javax.persistence.Transient;
+ import org.hibernate.annotations.Cache;
+ import org.hibernate.annotations.CacheConcurrencyStrategy;
++import org.hibernate.annotations.Type;
++import org.hibernate.type.StringClobType;
+ import com.eucalyptus.crypto.Crypto;
+ import com.eucalyptus.entities.AbstractPersistent;
+ 
+@@ -45,6 +47,7 @@
+ 
+   // The certificate
+   @Lob
++  @Type(type="org.hibernate.type.StringClobType")
+   @Column( name = "auth_certificate_pem" )
+   String pem;
+   
