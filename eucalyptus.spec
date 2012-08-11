@@ -10,6 +10,7 @@
 %global euca_libcurl      curl-devel
 %global euca_libvirt      libvirt
 %global euca_which        which
+%global spring            springframework303
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
@@ -26,7 +27,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       5%{?dist}
+Release:       6%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -144,6 +145,7 @@ BuildRequires: log4j
 BuildRequires: mule
 BuildRequires: mule-module-builders
 BuildRequires: mule-module-client
+BuildRequires: mule-module-management
 BuildRequires: mule-module-spring-config
 BuildRequires: mule-module-xml
 BuildRequires: mule-transport-vm
@@ -154,12 +156,11 @@ BuildRequires: proxool
 BuildRequires: quartz
 BuildRequires: regexp
 BuildRequires: slf4j
-BuildRequires: springframework
-BuildRequires: springframework-beans
-BuildRequires: springframework-context
-BuildRequires: springframework-context-support
-BuildRequires: springframework-expression
-BuildRequires: springframework-web
+BuildRequires: %{spring} 
+BuildRequires: %{spring}-beans
+BuildRequires: %{spring}-context
+BuildRequires: %{spring}-context-support
+BuildRequires: %{spring}-web
 BuildRequires: stax2-api
 BuildRequires: tomcat-el-2.2-api
 BuildRequires: tomcat-servlet-3.0-api
@@ -189,23 +190,24 @@ Requires(post): %{_sbindir}/euca_conf
 Source0:       %{name}-%{version}.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
 Source1:       euca-WSDL2C.sh
-Source2:       jarlinks.txt
-Patch0:        eucalyptus-jgroups3.patch
-Patch1:        eucalyptus-jetty8.patch
-Patch2:        eucalyptus-no-reporting.patch
-Patch3:        eucalyptus-groovy18.patch
-Patch4:        eucalyptus-build-against-new-guava.patch
-Patch5:        eucalyptus-wso2-axis2.patch
-Patch6:        eucalyptus-log4j-fix.patch
+Source2:       eucalyptus-jarlinks.txt
+Patch0:        eucalyptus-jdk7.patch
+Patch1:        eucalyptus-jgroups3.patch
+Patch2:        eucalyptus-jetty8.patch
+Patch3:        eucalyptus-no-reporting.patch
+Patch4:        eucalyptus-groovy18.patch
+Patch5:        eucalyptus-build-against-new-guava.patch
+Patch6:        eucalyptus-wso2-axis2.patch
+Patch7:        eucalyptus-log4j-fix.patch
 
 # Three separate patches to disable gwt
-Patch7:        eucalyptus-disable-gwt.patch
-Patch8:        eucalyptus-disable-gwt-in-buildxml.patch
-Patch9:        eucalyptus-disable-gwt-in-makefile.patch
+Patch8:        eucalyptus-disable-gwt.patch
+Patch9:        eucalyptus-disable-gwt-in-buildxml.patch
+Patch10:        eucalyptus-disable-gwt-in-makefile.patch
 
 # Hibernate patches for debian
-Patch10:       eucalyptus-pg-hibernate.patch
-Patch11:       eucalyptus-hibernate-3.6.patch
+Patch11:       eucalyptus-pg-hibernate.patch
+Patch12:       eucalyptus-hibernate-3.6.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -307,7 +309,6 @@ Requires: jna
 Requires: jsch
 Requires: json-lib
 Requires: jsr-305
-Requires: junit
 Requires: log4j
 Requires: mule
 Requires: mule-module-builders
@@ -528,8 +529,8 @@ tools.  It is neither intended nor supported for use by any other programs.
 
 %prep
 %setup -q
-# %patch0 -p1
-%patch1 -p1
+%patch0 -p1
+# %patch1 -p1
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
@@ -539,7 +540,7 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch8 -p1
 %patch9 -p1
 %patch10 -p1
-# %patch11 -p1
+%patch11 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -577,6 +578,7 @@ do
   rm $RPM_BUILD_ROOT/usr/share/eucalyptus/$( basename $x )
   ln -s $x $RPM_BUILD_ROOT/usr/share/eucalyptus/
 done
+rm $RPM_BUILD_ROOT/usr/share/eucalyptus/junit4*
 
 sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
        -e 's#.*HYPERVISOR=.*#HYPERVISOR="%{euca_hypervisor}"#' \
@@ -877,8 +879,11 @@ fi
 exit 0
 
 %changelog
-* Wed Aug 08 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-5
-- Add Requires for java packages
+* Fri Aug 10 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-6
+- add a few more jar links
+
+* Fri Aug 10 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-5
+- switch to spring 3.0.3
 
 * Wed Aug 08 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-4
 - Hibernate fixes
