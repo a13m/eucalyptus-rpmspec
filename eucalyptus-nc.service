@@ -1,0 +1,14 @@
+[Unit]
+Description=The Eucalyptus Node Controller service
+After=syslog.target network.target remote-fs.target nss-lookup.target libvirtd.service
+
+[Service]
+Type=forking
+PIDFile=/var/run/eucalyptus/eucalyptus-nc.pid
+# EnvironmentFile=/etc/sysconfig/eucalyptus
+ExecStart=/bin/sh -x /usr/sbin/eucalyptus-nc.init start
+ExecStop=/bin/sh -x /usr/sbin/eucalyptus-nc.init stop
+PrivateTmp=false
+
+[Install]
+WantedBy=multi-user.target

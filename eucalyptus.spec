@@ -27,7 +27,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       6%{?dist}
+Release:       7%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -191,6 +191,10 @@ Source0:       %{name}-%{version}.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
 Source1:       euca-WSDL2C.sh
 Source2:       eucalyptus-jarlinks.txt
+# XXX: these system units should go in the source tree
+Source3:       eucalyptus-cloud.service
+Source4:       eucalyptus-cc.service
+Source5:       eucalyptus-nc.service
 Patch0:        eucalyptus-jdk7.patch
 Patch1:        eucalyptus-jgroups3.patch
 Patch2:        eucalyptus-jetty8.patch
@@ -360,6 +364,9 @@ Requires:     %{name}             = %{version}-%{release}
 Requires:     %{name}-common-java = %{version}-%{release}
 Requires:     drbd-utils
 Requires:     lvm2
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+Requires(post): systemd-units
 
 %provide_abi walrus
 
@@ -430,6 +437,9 @@ Requires:     vtun
 Requires:     %{euca_dhcp}
 Requires:     %{euca_httpd}
 Requires:     %{_sbindir}/euca_conf
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+Requires(post): systemd-units
 
 %provide_abi cc
 
@@ -462,6 +472,9 @@ Requires:     %{euca_hypervisor}
 Requires:     %{euca_iscsi_client}
 Requires:     %{euca_libvirt}
 Requires:     %{_sbindir}/euca_conf
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+Requires(post): systemd-units
 
 %provide_abi nc
 
@@ -588,12 +601,11 @@ sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
        -e 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' \
        $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
 
-# Eucalyptus's build scripts do not respect initrddir
-if [ %{_initrddir} != /etc/init.d ]; then
-    mkdir -p $RPM_BUILD_ROOT/%{_initrddir}
-    mv $RPM_BUILD_ROOT/etc/init.d/* $RPM_BUILD_ROOT/%{_initrddir}
-    rmdir $RPM_BUILD_ROOT/etc/init.d
-fi
+# Move init scripts into sbindir and call them from systemd
+for x in $RPM_BUILD_ROOT/etc/init.d/*; do
+   mv $x $RPM_BUILD_ROOT/%{_sbindir}/$( basename $x ).init
+done
+rmdir $RPM_BUILD_ROOT/etc/init.d
 
 # Create the directories where components store their data
 mkdir -p $RPM_BUILD_ROOT/var/lib/eucalyptus
@@ -609,6 +621,15 @@ touch $RPM_BUILD_ROOT/etc/eucalyptus/httpd-{cc,nc,tmp}.conf
 # Add PolicyKit config on systems that support it
 mkdir -p $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d
 cp -p tools/eucalyptus-nc-libvirt.pkla $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
+
+# Install systemd service files
+mkdir -p $RPM_BUILD_ROOT%{_unitdir}
+install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-cloud.service \
+        $RPM_BUILD_ROOT%{_unitdir}/eucalyptus-cloud.service
+install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-cc.service \
+        $RPM_BUILD_ROOT%{_unitdir}/eucalyptus-cc.service
+install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-nc.service \
+        $RPM_BUILD_ROOT%{_unitdir}/eucalyptus-nc.service
 
 %files
 %doc LICENSE INSTALL README CHANGELOG
@@ -643,7 +664,8 @@ cp -p tools/eucalyptus-nc-libvirt.pkla $RPM_BUILD_ROOT/var/lib/polkit-1/localaut
 %attr(-,eucalyptus,eucalyptus) %dir /var/run/eucalyptus
 
 %files common-java
-%{_initrddir}/eucalyptus-cloud
+%{_unitdir}/eucalyptus-cloud.service
+%{_sbindir}/eucalyptus-cloud
 # cloud.d contains random stuff used by every Java component.  Most of it
 # probably belongs in /usr/share, but moving it will be painful.
 /etc/eucalyptus/cloud.d/
@@ -670,7 +692,8 @@ cp -p tools/eucalyptus-nc-libvirt.pkla $RPM_BUILD_ROOT/var/lib/polkit-1/localaut
 /usr/lib/eucalyptus/liblvm2control.so
 
 %files cc
-%{_initrddir}/eucalyptus-cc
+%{_unitdir}/eucalyptus-cc.service
+%{_sbindir}/eucalyptus-cc
 %{axis2c_home}/services/EucalyptusCC/
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/CC
 %ghost /etc/eucalyptus/httpd-cc.conf
@@ -684,7 +707,8 @@ cp -p tools/eucalyptus-nc-libvirt.pkla $RPM_BUILD_ROOT/var/lib/polkit-1/localaut
 %config(noreplace) /etc/eucalyptus/libvirt.xsl
 %dir /etc/eucalyptus/nc-hooks
 /etc/eucalyptus/nc-hooks/example.sh
-%{_initrddir}/eucalyptus-nc
+%{_unitdir}/eucalyptus-nc.service
+%{_sbindir}/eucalyptus-nc
 %{axis2c_home}/services/EucalyptusNC/
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/instances
 %ghost /etc/eucalyptus/httpd-nc.conf
@@ -801,84 +825,52 @@ fi
 exit 0
 
 %post common-java
-chkconfig --add eucalyptus-cloud
+%{systemd_post} eucalyptus-cloud.service
 
 %post sc
-/usr/bin/killall -9 vblade >/dev/null 2>&1
-if [ -e %{_initrddir}/tgtd ]; then
-    chkconfig --add tgtd
-    /sbin/service tgtd start
-fi
-exit 0
+# XXX: this should be represented by systemd deps
+# The sc may need its own unit for this?
+chkconfig --add tgtd
+/sbin/service tgtd start
 
 %post cc
-chkconfig --add eucalyptus-cc
+%{systemd_post} eucalyptus-cc.service
 
 %post nc
-if [ -e %{_initrddir}/libvirtd ]; then
-    chkconfig --add libvirtd
-    /sbin/service libvirtd restart
-fi
-chkconfig --add eucalyptus-nc
 usermod -a -G kvm eucalyptus
+%{systemd_post} eucalyptus-nc.service
 
-%preun cloud
-if [ "$1" = "0" ]; then
-    if [ -e %{_initrddir}/eucalyptus-cloud -a -e /etc/eucalyptus/eucalyptus.conf ]; then
-        /sbin/service eucalyptus-cloud restart || true
-    fi
-fi
-exit 0
+%postun common-java
+# XXX: This is probably superfluous, because at least one of
+# sc / walrus / cloud will do a restart here, too.
+%{systemd_postun_with_restart} eucalyptus-cloud.service
 
-%preun walrus
-if [ "$1" = "0" ]; then
-    if [ -e %{_initrddir}/eucalyptus-cloud -a -e /etc/eucalyptus/eucalyptus.conf ]; then
-        /sbin/service eucalyptus-cloud restart || true
-    fi
-fi
-exit 0
+%postun cloud
+# XXX: Is this right?
+%{systemd_postun_with_restart} eucalyptus-cloud.service
 
-%preun sc
-if [ "$1" = "0" ]; then
-    if [ -e %{_initrddir}/eucalyptus-cloud -a -e /etc/eucalyptus/eucalyptus.conf ]; then
-        /sbin/service eucalyptus-cloud restart || true
-    fi
-fi
-exit 0
+%postun walrus
+# XXX: Is this right?
+%{systemd_postun_with_restart} eucalyptus-cloud.service
+
+%postun sc
+# XXX: Is this right?
+%{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %preun common-java
-if [ "$1" = "0" ]; then
-    if [ -f /etc/eucalyptus/eucalyptus.conf ]; then
-        /sbin/service eucalyptus-cloud stop
-    fi
-    chkconfig --del eucalyptus-cloud
-fi
-exit 0
+%{systemd_preun} eucalyptus-cloud.service
 
 %preun cc
-if [ "$1" = "0" ]; then
-    if [ -f /etc/eucalyptus/eucalyptus.conf ]; then
-        /sbin/service eucalyptus-cc cleanstop
-    fi
-    chkconfig --del eucalyptus-cc
-%if 0%{?el5}
-    if [ -e /etc/sysconfig/system-config-securitylevel ]; then
-        sed -i '/^--port=8774/ d' /etc/sysconfig/system-config-securitylevel
-    fi
-%endif
-fi
-exit 0
+%{_sbindir}/eucalyptus-cc.init cleanstop
+%{systemd_preun} eucalyptus-cc.service
 
 %preun nc
-if [ "$1" = "0" ]; then
-    if [ -f /etc/eucalyptus/eucalyptus.conf ]; then
-        /sbin/service eucalyptus-nc stop
-    fi
-    chkconfig --del eucalyptus-nc
-fi
-exit 0
+%{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Sat Aug 11 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-7
+- add systemd units
+
 * Fri Aug 10 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-6
 - add a few more jar links
 
