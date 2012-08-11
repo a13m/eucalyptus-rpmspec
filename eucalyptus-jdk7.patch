@@ -1,38 +1,30 @@
-=== modified file 'clc/modules/module-inc.xml'
---- clc/modules/module-inc.xml	2011-12-06 22:44:56 +0000
-+++ clc/modules/module-inc.xml	2012-01-23 22:15:46 +0000
-@@ -155,7 +155,7 @@
- 		<mkdir dir="${rsrc.dir}" />
- 		<mkdir dir="${test.dir}" />
- 		<mkdir dir="${src.dir}" />
+diff --git a/clc/modules/module-inc.xml b/clc/modules/module-inc.xml
+index 2315bee..10f38c9 100644
+--- a/clc/modules/module-inc.xml
++++ b/clc/modules/module-inc.xml
+@@ -171,7 +171,7 @@
+ 		<echo message="[COMPILE] ${builder.target} for ${ant.project.name}" />
+ 		<antcall target="clean" />
+ 		<antcall target="build-mkdirs" inheritall="true" inheritrefs="true" />
 -		<javac srcdir="${src.dir}" classpathref="classpath" destdir="${build.dir}" deprecation="false" failonerror="true" debug="true" sourcepathref="srcpath" target="1.5" listfiles="true" />
-+		<javac srcdir="${src.dir}" classpathref="classpath" destdir="${build.dir}" deprecation="true" failonerror="true" debug="true" sourcepathref="srcpath" target="1.7" listfiles="true" encoding="UTF-8" />
++		<javac srcdir="${src.dir}" classpathref="classpath" destdir="${build.dir}" deprecation="false" failonerror="true" debug="true" sourcepathref="srcpath" source="1.6" target="1.6" listfiles="true" />
  	</target>
  	<target name="should-build-groovy">
  		<mkdir dir="${build.dir}" />
-@@ -173,7 +173,7 @@
- 		<mkdir dir="${src.dir}" />
+@@ -185,7 +185,7 @@
+ 		<antcall target="build-mkdirs" inheritall="true" inheritrefs="true" />
  		<taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc" classpathref="classpath" />
  		<groovyc srcdir="${src.dir}" classpathref="classpath" sourcepathref="srcpath" destdir="${build.dir}" verbose="true" listfiles="true">
 -			<javac target="1.5" debug="true" />
-+			<javac target="1.7" debug="true" />
++			<javac source="1.6" target="1.6" debug="true" />
  		</groovyc>
  	</target>
-     <target name="builder-test">
-@@ -189,7 +189,7 @@
-         <antcall target="${builder.target}" inheritall="true" inheritrefs="true" />
-         <taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc" classpathref="classpath" />
-         <groovyc srcdir="${test.dir}" classpathref="classpath" sourcepathref="srcpath" destdir="${build.dir}" verbose="true" listfiles="true">
--            <javac target="1.5" debug="true" />
-+            <javac target="1.7" debug="true" />
-         </groovyc>
-     </target>
- 
-
-=== modified file 'clc/modules/msgs/src/main/java/edu/ucsb/eucalyptus/msgs/BaseMessage.java'
---- clc/modules/msgs/src/main/java/edu/ucsb/eucalyptus/msgs/BaseMessage.java	2011-12-08 01:23:36 +0000
-+++ clc/modules/msgs/src/main/java/edu/ucsb/eucalyptus/msgs/BaseMessage.java	2012-01-23 22:09:12 +0000
-@@ -216,7 +216,7 @@
+ 	<target name="builder-test">
+diff --git a/clc/modules/msgs/src/main/java/edu/ucsb/eucalyptus/msgs/BaseMessage.java b/clc/modules/msgs/src/main/java/edu/ucsb/eucalyptus/msgs/BaseMessage.java
+index 4e458f5..1c44c55 100644
+--- a/clc/modules/msgs/src/main/java/edu/ucsb/eucalyptus/msgs/BaseMessage.java
++++ b/clc/modules/msgs/src/main/java/edu/ucsb/eucalyptus/msgs/BaseMessage.java
+@@ -216,7 +216,7 @@ public class BaseMessage {
      try {
        Class responseClass = ClassLoader.getSystemClassLoader( ).loadClass( replyType );
        reply = ( TYPE ) responseClass.newInstance( );
@@ -41,17 +33,16 @@
      } catch ( Exception e ) {
        Logger.getLogger( BaseMessage.class ).debug( e, e );
        throw new TypeNotPresentException( this.correlationId, e );
-
-=== modified file 'clc/modules/storage-controller/build.xml'
---- clc/modules/storage-controller/build.xml	2011-12-06 22:44:56 +0000
-+++ clc/modules/storage-controller/build.xml	2012-01-23 22:46:17 +0000
+diff --git a/clc/modules/storage-controller/build.xml b/clc/modules/storage-controller/build.xml
+index 625fccb..6b80c8a 100644
+--- a/clc/modules/storage-controller/build.xml
++++ b/clc/modules/storage-controller/build.xml
 @@ -74,7 +74,7 @@
  		<antcall target="build-java" />
      <antcall target="jar" />
  		<mkdir dir="include" />
 -		<javah classpath="${build.dir}" destdir="include" force="yes">
-+		<javah classpath="${build.dir}:${modules.dir}/core/build:${modules.dir}/msgs/build:${project.basedir}/lib/groovy-all-1.7.2.jar" destdir="include" force="yes">
++		<javah classpath="${build.dir}:${modules.dir}/core/build:${modules.dir}/msgs/build:/usr/share/java/groovy.jar" destdir="include" force="yes">
  			<class name="com.eucalyptus.storage.OverlayManager" />
  			<class name="com.eucalyptus.storage.AOEManager" />
  		</javah>
-
