@@ -695,6 +695,7 @@ install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-nc.service \
 # cloud.d contains random stuff used by every Java component.  Most of it
 # probably belongs in /usr/share, but moving it will be painful.
 /etc/eucalyptus/cloud.d/
+%{_sbindir}/eucalyptus-cloud
 /usr/share/eucalyptus/*jar*
 # %doc /usr/share/eucalyptus/licenses/
 %ghost /var/lib/eucalyptus/services
