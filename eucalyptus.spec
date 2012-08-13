@@ -691,11 +691,10 @@ install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-nc.service \
 
 %files common-java
 %{_unitdir}/eucalyptus-cloud.service
-%{_sbindir}/eucalyptus-cloud
+%{_sbindir}/eucalyptus-cloud.init
 # cloud.d contains random stuff used by every Java component.  Most of it
 # probably belongs in /usr/share, but moving it will be painful.
 /etc/eucalyptus/cloud.d/
-/usr/sbin/eucalyptus-cloud
 /usr/share/eucalyptus/*jar*
 # %doc /usr/share/eucalyptus/licenses/
 %ghost /var/lib/eucalyptus/services
@@ -719,7 +718,7 @@ install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-nc.service \
 
 %files cc
 %{_unitdir}/eucalyptus-cc.service
-%{_sbindir}/eucalyptus-cc
+%{_sbindir}/eucalyptus-cc.init
 %{axis2c_home}/services/EucalyptusCC/
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/CC
 %ghost /etc/eucalyptus/httpd-cc.conf
@@ -734,7 +733,7 @@ install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-nc.service \
 %dir /etc/eucalyptus/nc-hooks
 /etc/eucalyptus/nc-hooks/example.sh
 %{_unitdir}/eucalyptus-nc.service
-%{_sbindir}/eucalyptus-nc
+%{_sbindir}/eucalyptus-nc.init
 %{axis2c_home}/services/EucalyptusNC/
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/instances
 %ghost /etc/eucalyptus/httpd-nc.conf
