@@ -10,7 +10,7 @@
 %global euca_libcurl      curl-devel
 %global euca_libvirt      libvirt
 %global euca_which        which
-%global spring            springframework303
+%global spring            springframework
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
@@ -174,6 +174,7 @@ BuildRequires: xml-commons-apis
 BuildRequires: xml-security
 BuildRequires: xom
 BuildRequires: xpp3
+BuildRequires: xstream
 
 Requires:      %{euca_build_req}
 Requires:      %{euca_which}
@@ -212,6 +213,9 @@ Patch10:        eucalyptus-disable-gwt-in-makefile.patch
 # Hibernate patches for debian
 Patch11:       eucalyptus-pg-hibernate.patch
 Patch12:       eucalyptus-hibernate-3.6.patch
+
+# Another Guava patch for version 13
+Patch13:       eucalyptus-guava-13.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -327,12 +331,12 @@ Requires: proxool
 Requires: quartz
 Requires: regexp
 Requires: slf4j
-Requires: springframework
-Requires: springframework-beans
-Requires: springframework-context
-Requires: springframework-context-support
-Requires: springframework-expression
-Requires: springframework-web
+Requires: %{spring}
+Requires: %{spring}-beans
+Requires: %{spring}-context
+Requires: %{spring}-context-support
+Requires: %{spring}-expression
+Requires: %{spring}-web
 Requires: stax2-api
 Requires: tomcat-el-2.2-api
 Requires: tomcat-servlet-3.0-api
@@ -347,6 +351,11 @@ Requires: xml-security
 Requires: xom
 Requires: xpp3
 Requires:     %{_sbindir}/euca_conf
+
+# NOTE: mx4j is not a build requirement, but I had runtime issues without it.
+# Even stranger, it must _not_ be in the classpath at db initialization,
+# but must be there later.
+Requires: mx4j
 
 %provide_abi common-java
 
@@ -554,13 +563,30 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch9 -p1
 %patch10 -p1
 %patch11 -p1
+%patch13 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
-# rm clc/modules/www/build.xml
 
-# remove a class which depends on junit
-rm clc/modules/core/src/main/java/edu/ucsb/eucalyptus/util/XMLParserTest.java
+# remove classes which depend on junit
+# This is because junit on Fedora bundles hamcrest 1.1, which has conflicts
+# with hamcrest 1.2.  And regardless, these should not be bundled into our
+# production jars.
+pushd clc/modules
+rm core/src/main/java/edu/ucsb/eucalyptus/util/XMLParserTest.java
+rm dns/src/main/java/com/eucalyptus/cloud/ws/tests/DNSControlTest.java
+rm dns/src/main/java/com/eucalyptus/cloud/ws/tests/RemoveARecordTest.java
+rm storage-controller/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/CreateVolumeFromSnapshotTest.java
+rm storage-controller/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/StorageTests.java
+rm storage-controller/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/VolumeTest.java
+rm storage-controller/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/DeleteSnapshotTest.java
+rm storage-controller/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/CreateSnapshotTest.java
+rm walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/ImageCacheTest.java
+rm walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/BukkitImageTest.java
+rm walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/BukkitTest.java
+rm walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/ObjectTest.java
+rm walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/WalrusBucketTests.java
+popd
 
 %build
 export CFLAGS="%{optflags}"
