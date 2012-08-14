@@ -1,0 +1,30 @@
+--- eucalyptus-3.1.0/clc/modules/msgs/src/main/java/com/eucalyptus/binding/BindingCache.java	2012-06-19 14:41:48.000000000 -0400
++++ eucalyptus-3.1.0.new/clc/modules/msgs/src/main/java/com/eucalyptus/binding/BindingCache.java	2012-08-12 21:59:36.549219092 -0400
+@@ -132,6 +132,7 @@
+ import com.google.common.io.Files;
+ import com.google.common.io.InputSupplier;
+ import com.google.common.io.Resources;
++import com.google.common.hash.Hashing;
+ 
+ public class BindingCache {
+   private static Logger LOG = Logger.getLogger( BindingCache.class );
+@@ -233,7 +243,7 @@
+           this.addCurrentBinding( bindingBytes, ff.getName( ), "file:" + ff.getAbsolutePath( ) );
+         }
+       } else {
+-        String digest = new BigInteger( Files.getDigest( f, Digest.MD5.get( ) ) ).abs( ).toString( 16 );
++        String digest = new BigInteger( Files.hash( f, Hashing.md5( ) ).asBytes( ) ).abs( ).toString( 16 );
+         CURRENT_PROPS.put( BINDING_CACHE_JAR_PREFIX + f.getName( ), digest );
+         final JarFile jar = new JarFile( f );
+         final List<JarEntry> jarList = Collections.list( jar.entries( ) );
+--- eucalyptus-3.1.0/clc/modules/cluster-manager/src/main/java/com/eucalyptus/cloud/run/AdmissionControl.java	2012-06-19 14:41:48.000000000 -0400
++++ eucalyptus-3.1.0.new/clc/modules/cluster-manager/src/main/java/com/eucalyptus/cloud/run/AdmissionControl.java	2012-08-12 22:20:01.223161718 -0400
+@@ -144,7 +144,7 @@
+   }
+   
+   private static void rollbackAllocations( Allocation allocInfo, List<ResourceAllocator> finished, Exception e ) {
+-    for ( ResourceAllocator rollback : Iterables.reverse( finished ) ) {
++    for ( ResourceAllocator rollback : Lists.reverse( finished ) ) {
+       try {
+         rollback.fail( allocInfo, e );
+       } catch ( Exception e1 ) {
