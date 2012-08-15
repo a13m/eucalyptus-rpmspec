@@ -1090,7 +1090,7 @@ diff -ur eucalyptus-3.1.0.old/Makedefs.in eucalyptus-3.1.0.good/Makedefs.in
 +
 +# Trying to centralize the use of "prefix" and $EUCALYPTUS
 +eucaconfdir     = ${prefix}${etcdir}/eucalyptus
-+eucadatadir     = ${prefix}${datadir}/eucalyptus
++eucadatadir     = ${prefix}${datarootdir}/eucalyptus
 +eucadocdir      = ${prefix}${docdir}/eucalyptus
 +eucalibdir      = ${libdir}/eucalyptus
 +eucastatedir    = ${prefix}${localstatedir}/lib/eucalyptus
