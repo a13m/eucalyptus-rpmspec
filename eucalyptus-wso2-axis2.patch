@@ -26,15 +26,15 @@ index b6a68aa..68e7436 100644
  
  $(SHUTDOWNCC): generated/stubs $(SHUTDOWNCC).c cc-client-marshal-adb.c handlers.o handlers-state.o
 -	$(CC) -o $(SHUTDOWNCC) $(CFLAGS) $(INCLUDES) $(SHUTDOWNCC).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
-+	$(CC) -o $(SHUTDOWNCC) $(CFLAGS) $(INCLUDES) $(SHUTDOWNCC).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
++	$(CC) -o $(SHUTDOWNCC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(SHUTDOWNCC).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
  
  $(CLIENT)_full: generated/stubs $(CLIENT).c cc-client-marshal-adb.c handlers.o handlers-state.o
 -	$(CC) -o $(CLIENT)_full $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
-+	$(CC) -o $(CLIENT)_full $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
++	$(CC) -o $(CLIENT)_full $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=1 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
  
  $(CLIENTKILLALL): generated/stubs $(CLIENT).c cc-client-marshal-adb.c handlers.o handlers-state.o
 -	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
-+	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
++	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
  
  fakedeploy:
  	$(INSTALL) $(SERVICE_SO_FAKE) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(SERVICE_SO)
@@ -159,7 +159,7 @@ index e479095..a70a434 100644
  
  $(CLIENT): generated/stubs $(CLIENT).c gl-client-marshal-adb.c handlers.o
 -	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
-+	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
++	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
  
  deploy:
  	$(INSTALL) -d $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/

@@ -11,6 +11,14 @@
 %global euca_libvirt      libvirt
 %global euca_which        which
 %global spring            springframework
+%global eucaconfdir       %{_sysconfdir}/eucalyptus
+%global eucalibexecdir    %{_libexecdir}/eucalyptus
+%global eucalogdir        %{_localstatedir}/log/eucalyptus
+%global eucarundir        %{_localstatedir}/run/eucalyptus
+%global eucastatedir      %{_localstatedir}/lib/eucalyptus
+%global eucadatadir       %{_datadir}/eucalyptus
+%global eucajavalibdir    %{_datadir}/eucalyptus
+%global helperdir         %{_datadir}/eucalyptus
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
@@ -27,7 +35,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       7%{?dist}
+Release:       8%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -197,7 +205,7 @@ Source3:       eucalyptus-cloud.service
 Source4:       eucalyptus-cc.service
 Source5:       eucalyptus-nc.service
 Patch0:        eucalyptus-jdk7.patch
-Patch1:        eucalyptus-jgroups3.patch
+# Patch1:        eucalyptus-jgroups3.patch
 Patch2:        eucalyptus-jetty8.patch
 Patch3:        eucalyptus-no-reporting.patch
 Patch4:        eucalyptus-groovy18.patch
@@ -212,10 +220,13 @@ Patch10:        eucalyptus-disable-gwt-in-makefile.patch
 
 # Hibernate patches for debian
 Patch11:       eucalyptus-pg-hibernate.patch
-Patch12:       eucalyptus-hibernate-3.6.patch
+# Patch12:       eucalyptus-hibernate-3.6.patch
 
 # Another Guava patch for version 13
 Patch13:       eucalyptus-guava-13.patch
+
+# Kill all hardcoded paths
+Patch14:       eucalyptus-macro-fix.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -552,7 +563,6 @@ tools.  It is neither intended nor supported for use by any other programs.
 %prep
 %setup -q
 %patch0 -p1
-# %patch1 -p1
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
@@ -564,6 +574,7 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch10 -p1
 %patch11 -p1
 %patch13 -p1
+%patch14 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -591,9 +602,23 @@ popd
 %build
 export CFLAGS="%{optflags}"
 
-# Eucalyptus does not assign the usual meaning to prefix and other standard
-# configure variables, so we can't realistically use %%configure.
-./configure --with-axis2=%{_datadir}/axis2-* --with-axis2c=%{axis2c_home} --with-wsdl2c-sh=%{S:1} --enable-debug --prefix=/ --with-apache2-module-dir=%{_libdir}/httpd/modules --with-db-home=/usr --with-extra-version=%{release}
+# TODO: we should use %%configure now
+# Also, helperdir sould be a config option, unless we decide that
+# it's always eucadatadir
+./configure --with-axis2=%{_datadir}/axis2-* \
+            --with-axis2c=%{axis2c_home} \
+            --with-wsdl2c-sh=%{S:1} \
+            --enable-debug \
+            --prefix=/ \
+            --sbindir=%{_sbindir} \
+            --libexecdir=%{_libexecdir} \
+            --libdir=%{_libdir} \
+            --datarootdir=%{_datadir} \
+            --localstatedir=%{_localstatedir} \
+            --sysconfdir=%{_sysconfdir} \
+            --with-apache2-module-dir=%{_libdir}/httpd/modules  \
+            --with-db-home=/usr \
+            --with-extra-version=%{release}
 
 # Untar the bundled cloud-lib Java dependencies.
 mkdir clc/lib
@@ -614,18 +639,18 @@ LANG=en_US.UTF-8 make # %{?_smp_mflags}
 make install DESTDIR=$RPM_BUILD_ROOT
 for x in $( cat %{S:2} | grep -v junit4 );
 do
-  rm $RPM_BUILD_ROOT/usr/share/eucalyptus/$( basename $x )
-  ln -s $x $RPM_BUILD_ROOT/usr/share/eucalyptus/
+  rm $RPM_BUILD_ROOT%{eucajavalibdir}/$( basename $x )
+  ln -s $x $RPM_BUILD_ROOT%{eucajavalibdir}
 done
-rm $RPM_BUILD_ROOT/usr/share/eucalyptus/junit4*
+rm $RPM_BUILD_ROOT%{eucajavalibdir}/junit4*
 
 sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
        -e 's#.*HYPERVISOR=.*#HYPERVISOR="%{euca_hypervisor}"#' \
-       -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="/var/lib/eucalyptus/instances"#' \
+       -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="%{eucastatedir}/instances"#' \
        -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="%{euca_bridge}"#' \
        -e 's#.*USE_VIRTIO_DISK=.*#USE_VIRTIO_DISK="1"#' \
        -e 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' \
-       $RPM_BUILD_ROOT/etc/eucalyptus/eucalyptus.conf
+       $RPM_BUILD_ROOT%{eucaconfdir}/eucalyptus.conf
 
 # Move init scripts into sbindir and call them from systemd
 for x in $RPM_BUILD_ROOT/etc/init.d/*; do
@@ -634,15 +659,15 @@ done
 rmdir $RPM_BUILD_ROOT/etc/init.d
 
 # Create the directories where components store their data
-mkdir -p $RPM_BUILD_ROOT/var/lib/eucalyptus
-touch $RPM_BUILD_ROOT/var/lib/eucalyptus/services
+mkdir -p $RPM_BUILD_ROOT%{eucastatedir}
+touch $RPM_BUILD_ROOT%{eucastatedir}/services
 for dir in bukkits CC db keys ldap upgrade vmware volumes webapps; do
-    install -d -m 0700 $RPM_BUILD_ROOT/var/lib/eucalyptus/$dir
+    install -d -m 0700 $RPM_BUILD_ROOT%{eucastatedir}/$dir
 done
-install -d -m 0771 $RPM_BUILD_ROOT/var/lib/eucalyptus/instances
+install -d -m 0771 $RPM_BUILD_ROOT%{eucastatedir}/instances
 
-# Touch httpd config files that the init scripts create so we can %ghost them
-touch $RPM_BUILD_ROOT/etc/eucalyptus/httpd-{cc,nc,tmp}.conf
+# Touch httpd config files that the init scripts create so we can ghost them
+touch $RPM_BUILD_ROOT%{eucaconfdir}/httpd-{cc,nc,tmp}.conf
 
 # Add PolicyKit config on systems that support it
 mkdir -p $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d
@@ -650,102 +675,102 @@ cp -p tools/eucalyptus-nc-libvirt.pkla $RPM_BUILD_ROOT/var/lib/polkit-1/localaut
 
 # Install systemd service files
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
-install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-cloud.service \
+install -p -m 644 %{SOURCE3} \
         $RPM_BUILD_ROOT%{_unitdir}/eucalyptus-cloud.service
-install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-cc.service \
+install -p -m 644 %{SOURCE4} \
         $RPM_BUILD_ROOT%{_unitdir}/eucalyptus-cc.service
-install -p -m 644 $RPM_SOURCE_DIR/eucalyptus-nc.service \
+install -p -m 644 %{SOURCE5} \
         $RPM_BUILD_ROOT%{_unitdir}/eucalyptus-nc.service
 
 %files
 %doc LICENSE INSTALL README CHANGELOG
-/etc/eucalyptus/eucalyptus.conf
-/etc/eucalyptus/eucalyptus-version
-/etc/eucalyptus/httpd.conf
-%ghost /etc/eucalyptus/httpd-tmp.conf
-%attr(-,root,eucalyptus) %dir /usr/lib/eucalyptus
-%attr(4750,root,eucalyptus) /usr/lib/eucalyptus/euca_mountwrap
-%attr(4750,root,eucalyptus) /usr/lib/eucalyptus/euca_rootwrap
+%{eucaconfdir}/eucalyptus.conf
+%{eucaconfdir}/eucalyptus-version
+%{eucaconfdir}/httpd.conf
+%ghost %{eucaconfdir}/httpd-tmp.conf
+%attr(-,root,eucalyptus) %dir %{eucalibexecdir}
+%attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_mountwrap
+%attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_rootwrap
+%dir %{eucadatadir}
 
-/usr/sbin/euca_sync_key
+%{_sbindir}/euca_sync_key
 
-%dir /usr/share/eucalyptus
-/usr/share/eucalyptus/add_key.pl
-/usr/share/eucalyptus/connect_iscsitarget.pl
-/usr/share/eucalyptus/create-loop-devices
-/usr/share/eucalyptus/disconnect_iscsitarget.pl
-%doc /usr/share/eucalyptus/doc/
-/usr/share/eucalyptus/euca_ipt
-/usr/share/eucalyptus/euca_upgrade
-/usr/share/eucalyptus/floppy
-/usr/share/eucalyptus/get_iscsitarget.pl
-/usr/share/eucalyptus/populate_arp.pl
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/db
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/keys
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/upgrade
+# helperdir is either eucadatadir or eucalibexecdir
+%{helperdir}/add_key.pl
+%{helperdir}/connect_iscsitarget.pl
+%{helperdir}/create-loop-devices
+%{helperdir}/disconnect_iscsitarget.pl
+%doc %{_docdir}/eucalyptus
+%{helperdir}/euca_ipt
+%{helperdir}/euca_upgrade
+%{helperdir}/floppy
+%{helperdir}/get_iscsitarget.pl
+%{helperdir}/populate_arp.pl
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/db
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/keys
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/upgrade
 # Can this file go into a single-component package?  What uses it?
-/var/lib/eucalyptus/keys/cc-client-policy.xml
-%attr(-,eucalyptus,eucalyptus) %dir /var/log/eucalyptus
-%attr(-,eucalyptus,eucalyptus) %dir /var/run/eucalyptus
+%{eucastatedir}/keys/cc-client-policy.xml
+%attr(-,eucalyptus,eucalyptus) %dir %{eucalogdir}
+%attr(-,eucalyptus,eucalyptus) %dir %{eucarundir}
 
 %files common-java
 %{_unitdir}/eucalyptus-cloud.service
 %{_sbindir}/eucalyptus-cloud.init
 # cloud.d contains random stuff used by every Java component.  Most of it
 # probably belongs in /usr/share, but moving it will be painful.
-/etc/eucalyptus/cloud.d/
+%{eucaconfdir}/cloud.d/
 %{_sbindir}/eucalyptus-cloud
-/usr/share/eucalyptus/*jar*
-# %doc /usr/share/eucalyptus/licenses/
-%ghost /var/lib/eucalyptus/services
-%attr(-,eucalyptus,eucalyptus) /var/lib/eucalyptus/webapps/
+%{eucajavalibdir}/*jar*
+%ghost %{eucastatedir}/services
+%attr(-,eucalyptus,eucalyptus) %{eucastatedir}/webapps/
 
 %files cloud
-/etc/eucalyptus/cloud.d/init.d/01_pg_kernel_params
-/usr/sbin/euca-lictool
-/usr/share/eucalyptus/lic_default
-/usr/share/eucalyptus/lic_template
+%{eucaconfdir}/cloud.d/init.d/01_pg_kernel_params
+%{_sbindir}/euca-lictool
+%{eucadatadir}/lic_default
+%{eucadatadir}/lic_template
 
 %files walrus
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/bukkits
-/etc/eucalyptus/drbd.conf.example
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/bukkits
+%{eucaconfdir}/drbd.conf.example
 
 %files sc
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/volumes
-/usr/share/eucalyptus/connect_iscsitarget_sc.pl
-/usr/share/eucalyptus/disconnect_iscsitarget_sc.pl
-/usr/lib/eucalyptus/liblvm2control.so
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/volumes
+%{helperdir}/connect_iscsitarget_sc.pl
+%{helperdir}/disconnect_iscsitarget_sc.pl
+%{_libdir}/eucalyptus/liblvm2control.so
 
 %files cc
 %{_unitdir}/eucalyptus-cc.service
 %{_sbindir}/eucalyptus-cc.init
 %{axis2c_home}/services/EucalyptusCC/
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/CC
-%ghost /etc/eucalyptus/httpd-cc.conf
-/etc/eucalyptus/vtunall.conf.template
-/usr/lib/eucalyptus/shutdownCC
-/usr/share/eucalyptus/dynserv.pl
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/CC
+%ghost %{eucaconfdir}/httpd-cc.conf
+%{eucaconfdir}/vtunall.conf.template
+%{_libexecdir}/eucalyptus/shutdownCC
+%{helperdir}/dynserv.pl
 # Is this used?
-/var/lib/eucalyptus/keys/nc-client-policy.xml
+%{eucastatedir}/keys/nc-client-policy.xml
 
 %files nc
-%config(noreplace) /etc/eucalyptus/libvirt.xsl
-%dir /etc/eucalyptus/nc-hooks
-/etc/eucalyptus/nc-hooks/example.sh
+%config(noreplace) %{eucaconfdir}/libvirt.xsl
+%dir %{eucaconfdir}/nc-hooks
+%{eucaconfdir}/nc-hooks/example.sh
 %{_unitdir}/eucalyptus-nc.service
 %{_sbindir}/eucalyptus-nc.init
 %{axis2c_home}/services/EucalyptusNC/
-%attr(-,eucalyptus,eucalyptus) %dir /var/lib/eucalyptus/instances
-%ghost /etc/eucalyptus/httpd-nc.conf
-/usr/sbin/euca_test_nc
-/usr/share/eucalyptus/detach.pl
-/usr/share/eucalyptus/gen_kvm_libvirt_xml
-/usr/share/eucalyptus/gen_libvirt_xml
-/usr/share/eucalyptus/getstats.pl
-/usr/share/eucalyptus/get_sys_info
-/usr/share/eucalyptus/get_xen_info
-/usr/share/eucalyptus/partition2disk
+%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/instances
+%ghost %{eucaconfdir}/httpd-nc.conf
+%{_sbindir}/euca_test_nc
+%{helperdir}/detach.pl
+%{helperdir}/gen_kvm_libvirt_xml
+%{helperdir}/gen_libvirt_xml
+%{helperdir}/getstats.pl
+%{helperdir}/get_sys_info
+%{helperdir}/get_xen_info
+%{helperdir}/partition2disk
 /var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
 
 %files gl
@@ -817,15 +842,15 @@ if [ "$1" = "2" ]; then
     echo "$BACKUPDIR" > /tmp/eucaback.dir
     mkdir -p "$BACKUPDIR"
     EUCABACKUPS=""
-    for i in /var/lib/eucalyptus/keys/ /var/lib/eucalyptus/db/ /var/lib/eucalyptus/services /etc/eucalyptus/eucalyptus.conf /etc/eucalyptus/eucalyptus-version /usr/share/eucalyptus/; do
+    for i in %{eucastatedir}/keys/ %{eucastatedir}/db/ %{eucastatedir}/services %{eucaconfidr}/eucalyptus.conf %{eucaconfdir}/eucalyptus-version %{eucajavalibdir} %{eucahelperdir}; do
         if [ -e $i ]; then
             EUCABACKUPS="$EUCABACKUPS $i"
         fi
     done
 
-    OLD_EUCA_VERSION=`cat /etc/eucalyptus/eucalyptus-version`
-    echo "# This file was automatically generated by Eucalyptus packaging." > /etc/eucalyptus/.upgrade
-    echo "$OLD_EUCA_VERSION:$BACKUPDIR" >> /etc/eucalyptus/.upgrade
+    OLD_EUCA_VERSION=`cat %{eucaconfdir}/eucalyptus-version`
+    echo "# This file was automatically generated by Eucalyptus packaging." > %{eucaconfdir}/.upgrade
+    echo "$OLD_EUCA_VERSION:$BACKUPDIR" >> %{eucaconfdir}/.upgrade
 
     tar cf - $EUCABACKUPS 2>/dev/null | tar xf - -C "$BACKUPDIR" 2>/dev/null
 fi
@@ -834,19 +859,19 @@ exit 0
 %post
 udevadm control --reload-rules
 
-/usr/sbin/euca_conf -d / --instances /var/lib/eucalyptus/instances --hypervisor %{euca_hypervisor} --bridge %{euca_bridge}
+%{_sbindir}/euca_conf -d / --instances %{eucastatedir}/instances --hypervisor %{euca_hypervisor} --bridge %{euca_bridge}
 
 if [ "$1" = "2" ]; then
     if [ -f /tmp/eucaback.dir ]; then
         BACKDIR=`cat /tmp/eucaback.dir`
         if [ -d "$BACKDIR" ]; then
-            /usr/share/eucalyptus/euca_upgrade --old $BACKDIR --new / --conf >/var/log/eucalyptus/upgrade-config.log 2>&1
+            %{helperdir}/euca_upgrade --old $BACKDIR --new / --conf >%{eucalogdir}/upgrade-config.log 2>&1
         fi
     fi
 fi
 
 # Final setup and set the new user
-/usr/sbin/euca_conf --setup --user eucalyptus
+%{_sbindir}/euca_conf --setup --user eucalyptus
 
 exit 0
 
@@ -894,6 +919,9 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Tue Aug 14 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-8
+- Add patch for macro-ized directory paths throughout the code
+
 * Sat Aug 11 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-7
 - add systemd units
 
