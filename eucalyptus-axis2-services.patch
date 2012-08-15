@@ -1,0 +1,165 @@
+diff -ur eucalyptus-3.1.0.orig/cluster/Makefile eucalyptus-3.1.0/cluster/Makefile
+--- eucalyptus-3.1.0.orig/cluster/Makefile	2012-08-14 22:26:39.111376439 -0400
++++ eucalyptus-3.1.0/cluster/Makefile	2012-08-15 17:38:06.523469535 -0400
+@@ -87,25 +87,25 @@
+ 	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
+ 
+ fakedeploy:
+-	$(INSTALL) $(SERVICE_SO_FAKE) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(SERVICE_SO)
++	$(INSTALL) $(SERVICE_SO_FAKE) $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/$(SERVICE_SO)
+ 
+ deploy:
+-	$(INSTALL) -d $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
+-	$(INSTALL) $(SERVICE_SO) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
+-	$(INSTALL) $(CCWSDL) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) -d $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) $(SERVICE_SO) $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) $(CCWSDL) $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/
+ #no ws-sec
+-	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(CCWSDLNAME) > $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_noWS.xml
++	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/$(CCWSDLNAME) > $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/services_noWS.xml
+ 
+ #ws-sec
+-	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(CCWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml
+-	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2C_HOME):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
++	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/$(CCWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/services_WS.xml
++	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2_CC_REPO):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
+ ##	cp ../tools/*.pem $(EUCALYPTUS)/var/lib/eucalyptus/keys/
+ #	cp cc-client-policy.xml $(EUCALYPTUS)/var/lib/eucalyptus/keys/
+ #	chmod -R 0600 $(EUCALYPTUS)/var/lib/eucalyptus/keys/*
+ # ws
+-	$(INSTALL) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services.xml
++	$(INSTALL) $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/services_WS.xml $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/services.xml
+ # no ws
+-#	cp $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_noWS.xml $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services.xml
++#	cp $(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/services_noWS.xml $(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/services.xml
+ 
+ clean:
+ 	rm -f $(SERVICE_SO) $(SERVICE_SO_FAKE) *.o $(CLIENTKILLALL) $(CLIENT)_full $(SHUTDOWNCC) *~* *#*
+@@ -120,4 +120,4 @@
+ uninstall:
+ #	@$(RM) -f $(DESTDIR)$(sbindir)/$(SHUTDOWNCC)
+ 	@$(RM) -f $(DESTDIR)$(eucastatedir)/keys/cc-client-policy.xml
+-	@$(RM) -rf $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)
++	@$(RM) -rf $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)
+diff -ur eucalyptus-3.1.0.orig/gatherlog/GLclient.c eucalyptus-3.1.0/gatherlog/GLclient.c
+--- eucalyptus-3.1.0.orig/gatherlog/GLclient.c	2012-06-19 14:41:48.000000000 -0400
++++ eucalyptus-3.1.0/gatherlog/GLclient.c	2012-08-15 17:21:54.686519604 -0400
+@@ -70,7 +70,7 @@
+   int rc, i;
+   char *euca_home;
+   
+-  snprintf(endpoint_uri, 256," http://%s/axis2/services/EucalyptusGL", argv[1]);
++  snprintf(endpoint_uri, 256,"http://%s/axis2/services/EucalyptusGL", argv[1]);
+   //  env =  axutil_env_create_all("/tmp/GLclient.log", AXIS2_LOG_LEVEL_TRACE);
+   env =  axutil_env_create_all("/tmp/fooh", AXIS2_LOG_LEVEL_TRACE);
+   client_home = AXIS2_GETENV("AXIS2C_HOME");
+diff -ur eucalyptus-3.1.0.orig/gatherlog/Makefile eucalyptus-3.1.0/gatherlog/Makefile
+--- eucalyptus-3.1.0.orig/gatherlog/Makefile	2012-08-14 22:26:39.113376459 -0400
++++ eucalyptus-3.1.0/gatherlog/Makefile	2012-08-15 17:39:41.556477413 -0400
+@@ -47,22 +47,22 @@
+ 	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
+ 
+ deploy:
+-	$(INSTALL) -d $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
+-	$(INSTALL) $(SERVICE_SO) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
+-	$(INSTALL) $(GLWSDL) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) -d $(DESTDIR)$(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) $(SERVICE_SO) $(DESTDIR)$(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) $(GLWSDL) $(DESTDIR)$(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/
+ #no ws-sec
+-	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(GLWSDLNAME) > $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_noWS.xml
++	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/$(GLWSDLNAME) > $(DESTDIR)$(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/services_noWS.xml
+ 
+ #ws-sec
+-#	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(GLWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml
+-#	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2C_HOME):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
++#	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/$(GLWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/services_WS.xml
++#	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2_GL_REPO):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
+ #	cp ../tools/*.pem $(EUCALYPTUS)/var/lib/eucalyptus/keys/
+ #	cp cc-client-policy.xml $(EUCALYPTUS)/var/lib/eucalyptus/keys/
+ #	chmod -R 0600 $(EUCALYPTUS)/var/lib/eucalyptus/keys/*
+ # ws
+-#	cp $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services.xml
++#	cp $(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/services_WS.xml $(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/services.xml
+ # no ws
+-	$(INSTALL) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_noWS.xml $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services.xml
++	$(INSTALL) $(DESTDIR)$(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/services_noWS.xml $(DESTDIR)$(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/services.xml
+ 
+ clean:
+ 	rm -f $(SERVICE_SO) *.o $(CLIENT) *~* *#*  
+@@ -73,4 +73,4 @@
+ install:
+ 
+ uninstall:
+-	@$(RM) -rf $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)
++	@$(RM) -rf $(DESTDIR)$(AXIS2_GL_SERVICES)/$(SERVICE_NAME)
+diff -ur eucalyptus-3.1.0.orig/Makedefs.in eucalyptus-3.1.0/Makedefs.in
+--- eucalyptus-3.1.0.orig/Makedefs.in	2012-08-14 22:26:39.114376469 -0400
++++ eucalyptus-3.1.0/Makedefs.in	2012-08-15 17:34:39.099320533 -0400
+@@ -8,9 +8,16 @@
+ 
+ # packages we depend upon
+ export APACHE2_MODULE_DIR = @APACHE2_MODULE_DIR@
++export WSFCPP_HOME	  = @AXIS2C_HOME@
+ export AXIS2C_HOME	  = @AXIS2C_HOME@
+ export AXIS2C_SERVICES	  = @AXIS2C_SERVICES@
+ export AXIS2_HOME	  = @AXIS2_HOME@
++export AXIS2_NC_REPO      = ${AXIS2C_SERVICES}/nc
++export AXIS2_NC_SERVICES  = ${AXIS2_NC_REPO}/services
++export AXIS2_CC_REPO      = ${AXIS2C_SERVICES}/cc
++export AXIS2_CC_SERVICES  = ${AXIS2_CC_REPO}/services
++export AXIS2_GL_REPO      = ${AXIS2C_SERVICES}/gl
++export AXIS2_GL_SERVICES  = ${AXIS2_GL_REPO}/services
+ export LIBVIRT_HOME	  = @LIBVIRT_HOME@
+ export VDDK_HOME	  = @VDDK_HOME@
+ 
+@@ -72,7 +78,8 @@
+        -DLIBDIR=\"$(libdir)\" \
+        -DLIBEXECDIR=\"$(libexecdir)\" \
+        -DLOCALSTATEDIR=\"$(localstatedir)\" \
+-       -DHELPERDIR=\"$(libexecdir)\"
++       -DHELPERDIR=\"$(libexecdir)\" \
++       -DWSFCPP_HOME=\"$(WSFCPP_HOME)\"
+ 
+ CPPFLAGS	= @CPPFLAGS@ $(PATHS)
+ 
+diff -ur eucalyptus-3.1.0.orig/node/Makefile eucalyptus-3.1.0/node/Makefile
+--- eucalyptus-3.1.0.orig/node/Makefile	2012-08-14 22:26:39.127376598 -0400
++++ eucalyptus-3.1.0/node/Makefile	2012-08-15 17:36:15.814312663 -0400
+@@ -118,21 +118,21 @@
+ 	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) `xslt-config --cflags` -o test_xml -D__STANDALONE xml.c ../util/misc.o ../storage/diskutil.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
+ 
+ deploy:
+-	$(INSTALL) -d $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
+-	$(INSTALL) $(SERVICE_SO) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) -d $(DESTDIR)$(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/
++	$(INSTALL) $(SERVICE_SO) $(DESTDIR)$(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/
+ 
+ # no ws-sec
+-	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(NCWSDLNAME) > $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_noWS.xml
++	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/$(NCWSDLNAME) > $(DESTDIR)$(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/services_noWS.xml
+ # ws-sec
+-	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(NCWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cluster-cert.pem:g" | sed "s:CLIENT-KEY:cluster-pk.pem:g" | sed "s:SERVER-CERT:node-cert.pem:g" | sed "s:SERVER-KEY:node-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml
+-	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2C_HOME):g"  | sed "s:CLIENT-CERT:cluster-cert.pem:g" | sed "s:CLIENT-KEY:cluster-pk.pem:g" | sed "s:SERVER-CERT:node-cert.pem:g" | sed "s:SERVER-KEY:node-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > nc-client-policy.xml
++	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/$(NCWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cluster-cert.pem:g" | sed "s:CLIENT-KEY:cluster-pk.pem:g" | sed "s:SERVER-CERT:node-cert.pem:g" | sed "s:SERVER-KEY:node-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(DESTDIR)$(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/services_WS.xml
++	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2_NC_REPO):g"  | sed "s:CLIENT-CERT:cluster-cert.pem:g" | sed "s:CLIENT-KEY:cluster-pk.pem:g" | sed "s:SERVER-CERT:node-cert.pem:g" | sed "s:SERVER-KEY:node-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > nc-client-policy.xml
+ #	cp nc-client-policy.xml $(EUCALYPTUS)/var/lib/eucalyptus/keys/
+ ##	cp ../tools/*.pem $(EUCALYPTUS)/var/lib/eucalyptus/keys/
+ #	chmod -R 0600 $(EUCALYPTUS)/var/lib/eucalyptus/keys/*
+ # ws
+-	$(INSTALL) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services.xml
++	$(INSTALL) $(DESTDIR)$(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/services_WS.xml $(DESTDIR)$(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/services.xml
+ # no ws
+-#	cp $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_noWS.xml $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services.xml
++#	cp $(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/services_noWS.xml $(AXIS2_NC_SERVICES)/$(SERVICE_NAME)/services.xml
+ 
+ clean:
+ 	rm -rf $(SERVICE_SO) *.o $(CLIENT) $(CLIENT)_local *~* *#* test_xml
+@@ -147,5 +147,5 @@
+ uninstall:
+ 	$(RM) -f $(DESTDIR)$(eucastatedir)/keys/nc-client-policy.xml
+ 	$(RM) -f $(DESTDIR)$(eucasbindir)/euca_test_nc
+-	$(RM) -rf $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)
++	$(RM) -rf $(DESTDIR)$(AXIS2_NC_SERVICES)/$(SERVICE_NAME)
+ 

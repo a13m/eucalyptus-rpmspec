@@ -1,4 +1,5 @@
 %global axis2c_home       /usr
+%global axis2c_services   %{_libdir}/eucalyptus/axis2
 %global euca_dhcp         dhcp
 %global euca_bridge       br0
 %global euca_build_req    vconfig, wget, rsync
@@ -35,7 +36,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       8%{?dist}
+Release:       9%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -227,6 +228,9 @@ Patch13:       eucalyptus-guava-13.patch
 
 # Kill all hardcoded paths
 Patch14:       eucalyptus-macro-fix.patch
+
+# Make one repo per service of Axis2 services
+Patch15:       eucalyptus-axis2-services.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -575,6 +579,7 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch11 -p1
 %patch13 -p1
 %patch14 -p1
+%patch15 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -607,6 +612,7 @@ export CFLAGS="%{optflags}"
 # it's always eucadatadir
 ./configure --with-axis2=%{_datadir}/axis2-* \
             --with-axis2c=%{axis2c_home} \
+            --with-axis2c-services=%{axis2c_services} \
             --with-wsdl2c-sh=%{S:1} \
             --enable-debug \
             --prefix=/ \
@@ -745,7 +751,7 @@ install -p -m 644 %{SOURCE5} \
 %files cc
 %{_unitdir}/eucalyptus-cc.service
 %{_sbindir}/eucalyptus-cc.init
-%{axis2c_home}/services/EucalyptusCC/
+%{axis2c_services}/cc
 %attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/CC
 %ghost %{eucaconfdir}/httpd-cc.conf
 %{eucaconfdir}/vtunall.conf.template
@@ -760,7 +766,7 @@ install -p -m 644 %{SOURCE5} \
 %{eucaconfdir}/nc-hooks/example.sh
 %{_unitdir}/eucalyptus-nc.service
 %{_sbindir}/eucalyptus-nc.init
-%{axis2c_home}/services/EucalyptusNC/
+%{axis2c_services}/nc
 %attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/instances
 %ghost %{eucaconfdir}/httpd-nc.conf
 %{_sbindir}/euca_test_nc
@@ -774,7 +780,7 @@ install -p -m 644 %{SOURCE5} \
 /var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
 
 %files gl
-%{axis2c_home}/services/EucalyptusGL/
+%{axis2c_services}/gl
 
 # NB: the vmware tools packaged here only work against Eucalyptus
 # Enterprise Edition, but the client and server may be different
@@ -919,6 +925,9 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Wed Aug 15 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-9
+- Add patch for separating axis2 services into contained repos
+
 * Tue Aug 14 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-8
 - Add patch for macro-ized directory paths throughout the code
 
