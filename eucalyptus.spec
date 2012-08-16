@@ -205,6 +205,7 @@ Source2:       eucalyptus-jarlinks.txt
 Source3:       eucalyptus-cloud.service
 Source4:       eucalyptus-cc.service
 Source5:       eucalyptus-nc.service
+Source6:       axis2.xml
 Patch0:        eucalyptus-jdk7.patch
 # Patch1:        eucalyptus-jgroups3.patch
 Patch2:        eucalyptus-jetty8.patch
@@ -688,11 +689,26 @@ install -p -m 644 %{SOURCE4} \
 install -p -m 644 %{SOURCE5} \
         $RPM_BUILD_ROOT%{_unitdir}/eucalyptus-nc.service
 
+# Copy axis2.xml into /etc for now, and symlink it
+install -m 644 %{SOURCE6} \
+        $RPM_BUILD_ROOT%{eucaconfdir}/axis2.xml
+
+# add a mess of symlinks
+ln -s %{eucaconfdir}/axis2.xml %{axis2c_services}/cc/
+ln -s %{eucaconfdir}/axis2.xml %{axis2c_services}/nc/
+ln -s %{_libdir}/wso2-axis2/modules %{axis2c_services}/cc/
+ln -s %{_libdir}/wso2-axis2/modules %{axis2c_services}/nc/
+ln -s %{_libdir} %{axis2c_services}/cc/
+ln -s %{_libdir} %{axis2c_services}/nc/
+ln -s %{axis2c_services}/gl/EucalyptusGL %{axis2c_services}/cc/
+ln -s %{axis2c_services}/gl/EucalyptusGL %{axis2c_services}/nc/
+
 %files
 %doc LICENSE INSTALL README CHANGELOG
 %{eucaconfdir}/eucalyptus.conf
 %{eucaconfdir}/eucalyptus-version
 %{eucaconfdir}/httpd.conf
+%{eucaconfdir}/axis2.xml
 %ghost %{eucaconfdir}/httpd-tmp.conf
 %attr(-,root,eucalyptus) %dir %{eucalibexecdir}
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_mountwrap
