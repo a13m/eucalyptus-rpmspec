@@ -118,8 +118,8 @@ diff -ur eucalyptus-3.1.0.orig/Makedefs.in eucalyptus-3.1.0/Makedefs.in
         -DLIBDIR=\"$(libdir)\" \
         -DLIBEXECDIR=\"$(libexecdir)\" \
         -DLOCALSTATEDIR=\"$(localstatedir)\" \
--       -DHELPERDIR=\"$(libexecdir)\"
-+       -DHELPERDIR=\"$(libexecdir)\" \
+-       -DHELPERDIR=\"$(datarootdir)\"
++       -DHELPERDIR=\"$(datarootdir)\" \
 +       -DWSFCPP_HOME=\"$(WSFCPP_HOME)\"
  
  CPPFLAGS	= @CPPFLAGS@ $(PATHS)

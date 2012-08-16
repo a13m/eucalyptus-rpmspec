@@ -22,9 +22,9 @@ diff -ur eucalyptus-3.1.0.old/clc/modules/bootstrap/src/main/native/eucalyptus-b
 -	__die((strlen(GETARG(args, home)) + strlen(EUCA_LIB_DIR) >= 254),
 -			"Directory path too long: %s/%s", GETARG(args, home), EUCA_LIB_DIR);
 -	snprintf(lib_dir, 255, "%s%s", GETARG(args, home), EUCA_LIB_DIR);
-+	__die((strlen(GETARG(args, home)) + strlen(EUCALYPTUS_JAVA_LIB_DIR) >= 254),
-+			"Directory path too long: %s/%s", GETARG(args, home), EUCALYPTUS_JAVA_LIB_DIR);
-+	snprintf(lib_dir, 255, "%s%s", GETARG(args, home), EUCALYPTUS_JAVA_LIB_DIR);
++	__die((strlen(GETARG(args, home)) + strlen(EUCALYPTUS_JAVA_LIB_DIR) >= 256),
++			"Directory path too long: " EUCALYPTUS_JAVA_LIB_DIR, GETARG(args, home));
++	snprintf(lib_dir, 255, EUCALYPTUS_JAVA_LIB_DIR, GETARG(args, home));
  	snprintf(etc_dir, 255, "%s%s", GETARG(args, home), EUCA_ETC_DIR);
  	snprintf(class_cache_dir, 255, "%s%s", GETARG(args, home), EUCA_CLASSCACHE_DIR);
  	snprintf(script_dir, 255, "%s%s", GETARG(args, home), EUCA_SCRIPT_DIR);
@@ -1113,7 +1113,7 @@ diff -ur eucalyptus-3.1.0.old/Makedefs.in eucalyptus-3.1.0.good/Makedefs.in
 +       -DLIBDIR=\"$(libdir)\" \
 +       -DLIBEXECDIR=\"$(libexecdir)\" \
 +       -DLOCALSTATEDIR=\"$(localstatedir)\" \
-+       -DHELPERDIR=\"$(libexecdir)\"
++       -DHELPERDIR=\"$(datarootdir)\"
 +
 +CPPFLAGS	= @CPPFLAGS@ $(PATHS)
 +
@@ -1840,12 +1840,21 @@ diff -ur eucalyptus-3.1.0.old/node/Makefile eucalyptus-3.1.0.good/node/Makefile
  
  server: $(SERVICE_SO)
  
+@@ -89,7 +89,7 @@
+ 	make -C ../util
+ 
+ $(SERVICE_SO): generated/stubs $(STORAGE_OBJS) ../net/vnetwork.o ../util/misc.o ../util/hash.o ../util/data.o server-marshal.o handlers.o $(NC_HANDLERS) ../util/eucalyptus.h ../util/euca_auth.o ../storage/http.o ../util/windows-bundle.o
+-	$(CC) -o $(SERVICE_SO) -shared generated/adb_*.o generated/axis2*_skel_*.o server-marshal.o handlers.o $(NC_HANDLERS) $(STORAGE_OBJS) ../net/*.o ../util/*.o ../storage/http.o ../storage/storage-windows.o $(NC_LIBS) $(EFENCE)
++	$(CC) -o $(SERVICE_SO) -shared generated/adb_*.o generated/axis2*_skel_*.o generated/axis2_ext*.o server-marshal.o handlers.o $(NC_HANDLERS) $(STORAGE_OBJS) ../net/*.o ../util/*.o ../storage/http.o ../storage/storage-windows.o $(NC_LIBS) $(EFENCE)
+ 
+ clientlib: generated/stubs ../util/data.o client-marshal-adb.o
+ 
 @@ -98,24 +98,24 @@
  fake: $(CLIENT)_fake
  
  $(CLIENT): generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o $(CLIENT).c ../storage/vbr.o
 -	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
-+	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
++	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_ext*.o generated/axis2_stub_*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
  
  $(CLIENT)_fake: generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o client-marshal-fake.o $(CLIENT).c ../storage/vbr.o
  
@@ -1994,220 +2003,6 @@ diff -ur eucalyptus-3.1.0.old/storage/storage-windows.c eucalyptus-3.1.0.good/st
    snprintf(dest_path, 1024, "%s/floppy", rundir_path);
    if (!keyName || !strlen(keyName) || !strlen(instName)) {
      char cmd[MAX_PATH];
-diff -ur eucalyptus-3.1.0.old/tools/eucalyptus-cc.in eucalyptus-3.1.0.good/tools/eucalyptus-cc.in
---- eucalyptus-3.1.0.old/tools/eucalyptus-cc.in	2012-06-19 14:41:48.000000000 -0400
-+++ eucalyptus-3.1.0.good/tools/eucalyptus-cc.in	2012-08-14 13:41:23.507389285 -0400
-@@ -102,11 +102,12 @@
- # honor the ENV variable if found otherwise look in root
- if [ -z "$EUCALYPTUS" ] ; then
-        EUCALYPTUS="@prefix@"
--       if [ ! -e ${EUCALYPTUS}/etc/eucalyptus/eucalyptus.conf ] ; then
-+       if [ ! -e ${EUCALYPTUS}@sysconfdir@/eucalyptus/eucalyptus.conf ] ; then
-               EUCALYPTUS="/"
-        fi
- fi
- export EUCALYPTUS
-+LIBEXECDIR="$EUCALYPTUS@libexecdir@/eucalyptus/"
- 
- create_httpd_config() {
- 	IPS="all"
-@@ -117,8 +118,8 @@
-             -e "s|AXIS2C_HOME|$AXIS2C_HOME|" \
-             -e "s|\(ServerRoot\).*|\1 "$HTTPD_HOME"|" \
-             -e "s|EUCA_USER|$EUCA_USER|" \
--            $EUCALYPTUS/etc/eucalyptus/httpd.conf \
--            > $EUCALYPTUS/etc/eucalyptus/httpd-tmp.conf
-+            ${EUCALYPTUS}@sysconfdir@/eucalyptus/httpd.conf \
-+            > ${EUCALYPTUS}@sysconfdir@/eucalyptus/httpd-tmp.conf
- 
- 	# if we find authz load it (needed by ubuntu)
- 	if [ -e $HTTPD_HOME/usr/lib/apache2/modules/mod_authz_host.so ]; then
-@@ -499,11 +500,11 @@
- 			echo -n "Stopping $DESC: "
-                 fi
-         fi
--	# start and stop are hard: we loose the CC state
--	if ( test -f $EUCALYPTUS/usr/lib/eucalyptus/shutdownCC ); then
--	    $EUCALYPTUS/usr/lib/eucalyptus/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
-+	# start and stop are hard: we lose the CC state
-+	if ( test -f $EUCALYPTUS@libdir@/eucalyptus/shutdownCC ); then
-+	    $EUCALYPTUS@@/eucalyptus/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
- 	else
--	    echo "WARNING: could not find $EUCALYPTUS/usr/lib/eucalyptus/shutdownCC, please check location of executable"
-+	    echo "WARNING: could not find $EUCALYPTUS$LIBEXECDIR/shutdownCC, please check location of executable"
- 	fi
- 	
- 	do_stop
-@@ -546,10 +547,10 @@
- 		fi
- 	fi
- 
--	if ( test -f $EUCALYPTUS/usr/lib/eucalyptus/shutdownCC ); then
--	    $EUCALYPTUS/usr/lib/eucalyptus/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
-+	if ( test -f $EUCALYPTUS$LIBEXECDIR/shutdownCC ); then
-+	    $EUCALYPTUS$LIBEXECDIR/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
- 	else
--	    echo "WARNING: could not find $EUCALYPTUS/usr/lib/eucalyptus/shutdownCC, please check location of executable"
-+	    echo "WARNING: could not find $EUCALYPTUS$LIBEXECDIR/shutdownCC, please check location of executable"
- 	fi
- 
- 	do_stop
-diff -ur eucalyptus-3.1.0.old/tools/eucalyptus-nc.in eucalyptus-3.1.0.good/tools/eucalyptus-nc.in
---- eucalyptus-3.1.0.old/tools/eucalyptus-nc.in	2012-06-19 14:41:48.000000000 -0400
-+++ eucalyptus-3.1.0.good/tools/eucalyptus-nc.in	2012-08-14 14:05:46.177109797 -0400
-@@ -102,7 +102,6 @@
- MODPROBE="`which modprobe 2> /dev/null`"
- EUCA_USER="eucalyptus"
- 
--# honor the ENV variable if found otherwise look in root
- if [ -z "$EUCALYPTUS" ] ; then
-        EUCALYPTUS="@prefix@"
-        if [ ! -e ${EUCALYPTUS}/etc/eucalyptus/eucalyptus.conf ] ; then
-@@ -111,6 +110,17 @@
- fi
- export EUCALYPTUS
- 
-+EUCALIBEXECDIR=$EUCALYPTUS/usr/libexec
-+EUCASBINDIR=$EUCALYPTUS/usr/sbin
-+EUCACONFDIR=$EUCALYPTUS/etc/eucalyptus
-+EUCADATADIR=$EUCALYPTUS/usr/share/eucalyptus
-+EUCARUNDIR=$EUCALYPTUS/var/run/eucalyptus
-+EUCALOGDIR=$EUCALYPTUS/var/log/eucalyptus
-+
-+# Get default paths from somewhere
-+source ${EUCALYPTUS}/etc/eucalyptus/defaults
-+
-+# honor the ENV variable if found otherwise look in root
- create_httpd_config() {
- 	IPS="all"
- 
-@@ -125,16 +135,16 @@
- 
- 	# load authz if we have it (ubuntu needs it)
- 	if [ -e $HTTPD_HOME/usr/lib/apache2/modules/mod_authz_host.so ]; then
--		echo "LoadModule authz_host_module /usr/lib/apache2/modules/mod_authz_host.so" >> $EUCALYPTUS/etc/eucalyptus/httpd-tmp.conf
-+		echo "LoadModule authz_host_module /usr/lib/apache2/modules/mod_authz_host.so" >> $EUCACONFDIR/httpd-tmp.conf
- 	fi
- 
- 	# let's configure the NC
-         sed -e "s|\(Listen\).*|\1 $NC_PORT|" \
--            -e "s|\(PidFile\).*|\1 $EUCALYPTUS/var/run/eucalyptus/eucalyptus-nc.pid|" \
-+            -e "s|\(PidFile\).*|\1 $EUCARUNDIR/eucalyptus-nc.pid|" \
-             -e "s|\(Allow from\).*|\1 $IPS|" \
--            -e "s|\(ErrorLog\).*|\1 $EUCALYPTUS/var/log/eucalyptus/httpd-nc_error_log|" \
--            $EUCALYPTUS/etc/eucalyptus/httpd-tmp.conf \
--            > $EUCALYPTUS/etc/eucalyptus/httpd-nc.conf
-+            -e "s|\(ErrorLog\).*|\1 $EUCALOGDIR/httpd-nc_error_log|" \
-+            $EUCACONFDIR/httpd-tmp.conf \
-+            > $EUCACONFDIR/httpd-nc.conf
- }
- 
- # crude way to start the axis2c services
-@@ -150,7 +160,7 @@
- 		echo "cannot find httpd (was set to <$HTTPD>)!"
- 		exit 1
- 	fi
--	if [ ! -x $EUCALYPTUS/usr/sbin/euca_conf ]; then
-+	if [ ! -x $EUCASBINDIR/euca_conf ]; then
- 		echo "Some eucalyptus components are missing"
- 		exit 1
- 	fi
-@@ -158,7 +168,7 @@
- 	# Add loop devices if necessary (and possible)
- 	[ -z "$CREATE_NC_LOOP_DEVICES" ] && CREATE_NC_LOOP_DEVICES=256
- 	if [ "$CREATE_NC_LOOP_DEVICES" -gt 0 ] 2>/dev/null; then
--            "$EUCALYPTUS/usr/share/eucalyptus/create-loop-devices" $CREATE_NC_LOOP_DEVICES
-+            "$EUCALIBEXECDIR/create-loop-devices" $CREATE_NC_LOOP_DEVICES
- 	fi
- 
- 	# let's see how many loop devices we have available
-@@ -181,12 +191,12 @@
- 		echo "warning: found fewer loop devices in /sys/block than in /dev ($LOOP_AVL_SYS < $LOOP_AVL_DEV); expect problems"
- 	fi
- 
--	if ! $EUCALYPTUS/usr/sbin/euca_conf --check nc ; then
-+	if ! $EUCASBINDIR/euca_conf --check nc ; then
- 		exit 1
- 	fi
- 
- 	# we have a program to test the hypervisor and more for the NC
--	if [ ! -x $EUCALYPTUS/usr/sbin/euca_test_nc ]; then
-+	if [ ! -x $EUCASBINDIR/euca_test_nc ]; then
- 		echo
- 		echo "Cannot check Node Controller: missing euca_test_nc."
- 	else
-@@ -194,7 +204,7 @@
-             for i in 1 2 3 4 5
-             do
-                 PASSED=0
--                if ( $EUCALYPTUS/usr/sbin/euca_test_nc $HYPERVISOR > $EUCALYPTUS/var/log/eucalyptus/euca_test_nc.log 2>&1 ); then
-+                if ( $EUCASBINDIR/euca_test_nc $HYPERVISOR > $EUCALOGDIR/euca_test_nc.log 2>&1 ); then
-                     PASSED=1
-                 else
-                     sleep 1
-@@ -202,7 +212,7 @@
-             done
-             if ( test $PASSED = "0" ); then
-                 echo
--                echo "Node Controller cannot be started: errors in $EUCALYPTUS/var/log/eucalyptus/euca_test_nc.log"
-+                echo "Node Controller cannot be started: errors in $EUCALOGDIR/euca_test_nc.log"
-                 exit 1
-             fi
- 	fi
-@@ -238,14 +248,14 @@
- 	# let's be sure we have the right port for NC and CC
- 	create_httpd_config
- 
--	if [ -x $EUCALYPTUS/usr/sbin/eucanetd ]; then
--            if ! $EUCALYPTUS/usr/sbin/eucanetd ; then
-+	if [ -x $EUCASBINDIR/eucanetd ]; then
-+            if ! $EUCASBINDIR/eucanetd ; then
- 		echo
- 		echo "Failed to start the eucanetd"
-             fi
- 	fi
- 
--	if ! $HTTPD -f $EUCALYPTUS/etc/eucalyptus/httpd-nc.conf ; then
-+	if ! $HTTPD -f $EUCACONFDIR/httpd-nc.conf ; then
- 		echo
- 		echo "Failed to start the NC!"
- 		exit 1
-@@ -253,7 +263,7 @@
- }
- 
- do_status() {
--	pidfile=$EUCALYPTUS/var/run/eucalyptus/eucalyptus-nc.pid
-+	pidfile=$EUCARUNDIR/eucalyptus-nc.pid
- 	if [ -s $pidfile ]; then
- 		pid=`cat $pidfile 2> /dev/null`
- 		if ps axww|grep $pid|grep httpd-nc.conf > /dev/null ; then
-@@ -265,13 +275,13 @@
- }
- 
- do_stop() {
--	netpid="$EUCALYPTUS/var/run/eucalyptus/eucanetd.pid"
-+	netpid="$EUCARUNDIR/eucanetd.pid"
-         if [ -f "$netpid" ]; then
-             kill `cat $netpid` >/dev/null 2>&1
-             rm -f $netpid
-         fi
- 
--	pidfile=$EUCALYPTUS/var/run/eucalyptus/eucalyptus-nc.pid
-+	pidfile=$EUCARUNDIR/eucalyptus-nc.pid
- 
- 	# let's be sure we are killing the right process
- 	if ! do_status ; then
-@@ -302,8 +312,8 @@
- }
- 
- # Read configuration variable file if it is present
--if [ -r $EUCALYPTUS/etc/eucalyptus/eucalyptus.conf ]; then
--	. $EUCALYPTUS/etc/eucalyptus/eucalyptus.conf
-+if [ -r $EUCACONFDIR/eucalyptus.conf ]; then
-+	. $EUCACONFDIR/eucalyptus.conf
- else
- 	echo "Cannot find eucalyptus configuration file!"
- 	exit 1
 diff -ur eucalyptus-3.1.0.old/tools/Makefile eucalyptus-3.1.0.good/tools/Makefile
 --- eucalyptus-3.1.0.old/tools/Makefile	2012-06-19 14:41:48.000000000 -0400
 +++ eucalyptus-3.1.0.good/tools/Makefile	2012-08-14 14:07:28.522999879 -0400

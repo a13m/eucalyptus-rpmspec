@@ -36,7 +36,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       9%{?dist}
+Release:       10%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -201,11 +201,21 @@ Source0:       %{name}-%{version}.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
 Source1:       euca-WSDL2C.sh
 Source2:       eucalyptus-jarlinks.txt
+
 # XXX: these system units should go in the source tree
 Source3:       eucalyptus-cloud.service
 Source4:       eucalyptus-cc.service
 Source5:       eucalyptus-nc.service
+
+# These are sources that greatly simplify CC/NC startup,
+# Removing dynamic config file generation and needless
+# guesswork about where axis2 files are.
 Source6:       axis2.xml
+Source7:       eucalyptus-cc.init
+Source8:       eucalyptus-nc.init
+Source9:       httpd-cc.conf
+Source10:      httpd-nc.conf
+
 Patch0:        eucalyptus-jdk7.patch
 # Patch1:        eucalyptus-jgroups3.patch
 Patch2:        eucalyptus-jetty8.patch
@@ -232,6 +242,9 @@ Patch14:       eucalyptus-macro-fix.patch
 
 # Make one repo per service of Axis2 services
 Patch15:       eucalyptus-axis2-services.patch
+
+# Fix rootwrap path in python files
+Patch16:       eucalyptus-rootwrap-python.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -581,6 +594,7 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch13 -p1
 %patch14 -p1
 %patch15 -p1
+%patch16 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -660,10 +674,13 @@ sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
        $RPM_BUILD_ROOT%{eucaconfdir}/eucalyptus.conf
 
 # Move init scripts into sbindir and call them from systemd
-for x in $RPM_BUILD_ROOT/etc/init.d/*; do
-   mv $x $RPM_BUILD_ROOT/%{_sbindir}/$( basename $x ).init
-done
-rmdir $RPM_BUILD_ROOT/etc/init.d
+mv $RPM_BUILD_ROOT/etc/init.d/eucalyptus-cloud $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-cloud.init
+rm -rf $RPM_BUILD_ROOT/etc/init.d
+cp -p %{SOURCE7} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-cc.init
+cp -p %{SOURCE8} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-nc.init
+cp -p %{SOURCE9} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd-cc.conf
+cp -p %{SOURCE10} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd-nc.conf
+rm $RPM_BUILD_ROOT/%{eucaconfdir}/httpd.conf
 
 # Create the directories where components store their data
 mkdir -p $RPM_BUILD_ROOT%{eucastatedir}
@@ -672,9 +689,6 @@ for dir in bukkits CC db keys ldap upgrade vmware volumes webapps; do
     install -d -m 0700 $RPM_BUILD_ROOT%{eucastatedir}/$dir
 done
 install -d -m 0771 $RPM_BUILD_ROOT%{eucastatedir}/instances
-
-# Touch httpd config files that the init scripts create so we can ghost them
-touch $RPM_BUILD_ROOT%{eucaconfdir}/httpd-{cc,nc,tmp}.conf
 
 # Add PolicyKit config on systems that support it
 mkdir -p $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d
@@ -694,22 +708,20 @@ install -m 644 %{SOURCE6} \
         $RPM_BUILD_ROOT%{eucaconfdir}/axis2.xml
 
 # add a mess of symlinks
-ln -s %{eucaconfdir}/axis2.xml %{axis2c_services}/cc/
-ln -s %{eucaconfdir}/axis2.xml %{axis2c_services}/nc/
-ln -s %{_libdir}/wso2-axis2/modules %{axis2c_services}/cc/
-ln -s %{_libdir}/wso2-axis2/modules %{axis2c_services}/nc/
-ln -s %{_libdir} %{axis2c_services}/cc/
-ln -s %{_libdir} %{axis2c_services}/nc/
-ln -s %{axis2c_services}/gl/EucalyptusGL %{axis2c_services}/cc/
-ln -s %{axis2c_services}/gl/EucalyptusGL %{axis2c_services}/nc/
+ln -s %{eucaconfdir}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/cc/
+ln -s %{eucaconfdir}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/nc/
+ln -s %{_libdir}/wso2-axis2/modules $RPM_BUILD_ROOT%{axis2c_services}/cc/
+ln -s %{_libdir}/wso2-axis2/modules $RPM_BUILD_ROOT%{axis2c_services}/nc/
+ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/cc/
+ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/nc/
+ln -s %{axis2c_services}/gl/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/cc/
+ln -s %{axis2c_services}/gl/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/nc/
 
 %files
 %doc LICENSE INSTALL README CHANGELOG
 %{eucaconfdir}/eucalyptus.conf
 %{eucaconfdir}/eucalyptus-version
-%{eucaconfdir}/httpd.conf
 %{eucaconfdir}/axis2.xml
-%ghost %{eucaconfdir}/httpd-tmp.conf
 %attr(-,root,eucalyptus) %dir %{eucalibexecdir}
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_mountwrap
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_rootwrap
@@ -769,7 +781,7 @@ ln -s %{axis2c_services}/gl/EucalyptusGL %{axis2c_services}/nc/
 %{_sbindir}/eucalyptus-cc.init
 %{axis2c_services}/cc
 %attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/CC
-%ghost %{eucaconfdir}/httpd-cc.conf
+%{eucaconfdir}/httpd-cc.conf
 %{eucaconfdir}/vtunall.conf.template
 %{_libexecdir}/eucalyptus/shutdownCC
 %{helperdir}/dynserv.pl
@@ -784,7 +796,7 @@ ln -s %{axis2c_services}/gl/EucalyptusGL %{axis2c_services}/nc/
 %{_sbindir}/eucalyptus-nc.init
 %{axis2c_services}/nc
 %attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/instances
-%ghost %{eucaconfdir}/httpd-nc.conf
+%{eucaconfdir}/httpd-nc.conf
 %{_sbindir}/euca_test_nc
 %{helperdir}/detach.pl
 %{helperdir}/gen_kvm_libvirt_xml
@@ -941,6 +953,12 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Thu Aug 16 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-10
+- add custom init scripts and axis2 httpd configs
+- fix undefined functions in NC
+- fix rootwrap path in eucadmin scripts
+- fix errors in Java lib dir path calculation in cloud boostrapper
+
 * Wed Aug 15 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-9
 - Add patch for separating axis2 services into contained repos
 
