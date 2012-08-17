@@ -36,7 +36,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       11%{?dist}
+Release:       12%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -712,10 +712,10 @@ ln -s %{eucaconfdir}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/cc/
 ln -s %{eucaconfdir}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/nc/
 ln -s %{_libdir}/wso2-axis2/modules $RPM_BUILD_ROOT%{axis2c_services}/cc/
 ln -s %{_libdir}/wso2-axis2/modules $RPM_BUILD_ROOT%{axis2c_services}/nc/
-ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/cc/
-ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/nc/
-ln -s %{axis2c_services}/gl/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/cc/
-ln -s %{axis2c_services}/gl/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/nc/
+ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/cc/lib
+ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/nc/lib
+ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/cc/services
+ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/nc/services
 
 %files
 %doc LICENSE INSTALL README CHANGELOG
@@ -953,6 +953,10 @@ usermod -a -G kvm eucalyptus
 # %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Fri Aug 17 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-12
+- fix axis2 symlinks
+- deal with broken Lob entities
+
 * Thu Aug 16 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-11
 - comment out systemd macros; they don't work yet
 - fix more path substitution fallout
