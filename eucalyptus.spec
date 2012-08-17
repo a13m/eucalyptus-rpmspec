@@ -36,7 +36,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       10%{?dist}
+Release:       11%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -910,7 +910,7 @@ fi
 exit 0
 
 %post common-java
-%{systemd_post} eucalyptus-cloud.service
+# %{systemd_post} eucalyptus-cloud.service
 
 %post sc
 # XXX: this should be represented by systemd deps
@@ -919,40 +919,44 @@ chkconfig --add tgtd
 /sbin/service tgtd start
 
 %post cc
-%{systemd_post} eucalyptus-cc.service
+# %{systemd_post} eucalyptus-cc.service
 
 %post nc
 usermod -a -G kvm eucalyptus
-%{systemd_post} eucalyptus-nc.service
+# %{systemd_post} eucalyptus-nc.service
 
 %postun common-java
 # XXX: This is probably superfluous, because at least one of
 # sc / walrus / cloud will do a restart here, too.
-%{systemd_postun_with_restart} eucalyptus-cloud.service
+# %{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %postun cloud
 # XXX: Is this right?
-%{systemd_postun_with_restart} eucalyptus-cloud.service
+# %{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %postun walrus
 # XXX: Is this right?
-%{systemd_postun_with_restart} eucalyptus-cloud.service
+# %{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %postun sc
 # XXX: Is this right?
-%{systemd_postun_with_restart} eucalyptus-cloud.service
+# %{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %preun common-java
-%{systemd_preun} eucalyptus-cloud.service
+# %{systemd_preun} eucalyptus-cloud.service
 
 %preun cc
 %{_sbindir}/eucalyptus-cc.init cleanstop
-%{systemd_preun} eucalyptus-cc.service
+# %{systemd_preun} eucalyptus-cc.service
 
 %preun nc
-%{systemd_preun} eucalyptus-nc.service
+# %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Thu Aug 16 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-11
+- comment out systemd macros; they don't work yet
+- fix more path substitution fallout
+
 * Thu Aug 16 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-10
 - add custom init scripts and axis2 httpd configs
 - fix undefined functions in NC
