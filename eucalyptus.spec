@@ -1,4 +1,4 @@
-%global axis2c_home       /usr
+%global axis2c_home       /usr/lib64/wso2-axis2
 %global axis2c_services   %{_libdir}/eucalyptus/axis2
 %global euca_dhcp         dhcp
 %global euca_bridge       br0
@@ -36,7 +36,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       12%{?dist}
+Release:       13%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -98,7 +98,7 @@ BuildRequires: geronimo-ejb
 BuildRequires: geronimo-jms
 BuildRequires: geronimo-jta
 BuildRequires: groovy
-BuildRequires: guava
+BuildRequires: guava >= 12
 BuildRequires: ha-jdbc
 BuildRequires: hamcrest12
 BuildRequires: hibernate3
@@ -216,35 +216,41 @@ Source8:       eucalyptus-nc.init
 Source9:       httpd-cc.conf
 Source10:      httpd-nc.conf
 
+# https://eucalyptus.atlassian.net/browse/EUCA-2364
 Patch0:        eucalyptus-jdk7.patch
-# Patch1:        eucalyptus-jgroups3.patch
+# https://eucalyptus.atlassian.net/browse/EUCA-3253
 Patch2:        eucalyptus-jetty8.patch
+# Reporting module requires activemq, which is not yet packaged
 Patch3:        eucalyptus-no-reporting.patch
+# https://eucalyptus.atlassian.net/browse/EUCA-2993
 Patch4:        eucalyptus-groovy18.patch
-Patch5:        eucalyptus-build-against-new-guava.patch
-Patch6:        eucalyptus-wso2-axis2.patch
-Patch7:        eucalyptus-log4j-fix.patch
+# https://eucalyptus.atlassian.net/browse/EUCA-2997
+Patch5:        eucalyptus-guava-11.patch
+Patch6:        eucalyptus-guava-13.patch
+# This patch is required if we used Axis2/Java 1.6 for code generation.
+Patch7:        eucalyptus-axis2-java-1.6.patch
+# Minor log4j interface change
+Patch8:        eucalyptus-log4j-fix.patch
 
 # Three separate patches to disable gwt
-Patch8:        eucalyptus-disable-gwt.patch
-Patch9:        eucalyptus-disable-gwt-in-buildxml.patch
-Patch10:        eucalyptus-disable-gwt-in-makefile.patch
+Patch9:        eucalyptus-disable-gwt.patch
+Patch10:        eucalyptus-disable-gwt-in-buildxml.patch
+Patch11:        eucalyptus-disable-gwt-in-makefile.patch
 
-# Hibernate patches for debian
-Patch11:       eucalyptus-pg-hibernate.patch
-# Patch12:       eucalyptus-hibernate-3.6.patch
-
-# Another Guava patch for version 13
-Patch13:       eucalyptus-guava-13.patch
+# https://eucalyptus.atlassian.net/browse/EUCA-2998
+Patch12:       eucalyptus-pg-hibernate.patch
 
 # Kill all hardcoded paths
-Patch14:       eucalyptus-macro-fix.patch
+Patch13:       eucalyptus-macro-fix.patch
 
 # Make one repo per service of Axis2 services
-Patch15:       eucalyptus-axis2-services.patch
+Patch14:       eucalyptus-axis2-services.patch
 
-# Fix rootwrap path in python files
-Patch16:       eucalyptus-rootwrap-python.patch
+# Fix rootwrap path in python files 
+Patch15:       eucalyptus-rootwrap-python.patch
+
+# Fix include location for axis2 libs
+Patch16:       eucalyptus-wso2-axis2-configure.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -591,6 +597,7 @@ tools.  It is neither intended nor supported for use by any other programs.
 %patch9 -p1
 %patch10 -p1
 %patch11 -p1
+%patch12 -p1
 %patch13 -p1
 %patch14 -p1
 %patch15 -p1
@@ -641,7 +648,7 @@ export CFLAGS="%{optflags}"
             --with-db-home=/usr \
             --with-extra-version=%{release}
 
-# Untar the bundled cloud-lib Java dependencies.
+# symlink java deps
 mkdir clc/lib
 for x in $( cat %{S:2} ); 
 do 
@@ -656,7 +663,6 @@ done
 LANG=en_US.UTF-8 make # %{?_smp_mflags}
 
 %install
-[ $RPM_BUILD_ROOT != "/" ] && rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 for x in $( cat %{S:2} | grep -v junit4 );
 do
@@ -855,7 +861,7 @@ getent group eucalyptus >/dev/null || groupadd -r eucalyptus
 #    useradd -r -g eucalyptus -d /var/lib/eucalyptus -s /sbin/nologin \
 #    -c 'Eucalyptus' eucalyptus
 getent passwd eucalyptus >/dev/null || \
-    useradd -r -g eucalyptus -d /var/lib/eucalyptus \
+    useradd -r -g eucalyptus -d %{eucastatedir} \
     -c 'Eucalyptus' eucalyptus
 
 if [ "$1" = "2" ]; then
@@ -871,7 +877,7 @@ if [ "$1" = "2" ]; then
     fi
 
     # Back up important data as well as all of the previous installation's jars.
-    BACKUPDIR="/var/lib/eucalyptus/upgrade/eucalyptus.backup.`date +%%s`"
+    BACKUPDIR="%{eucastatedir}/upgrade/eucalyptus.backup.`date +%%s`"
     ## FIXME:  What cleans this file up?
     echo "$BACKUPDIR" > /tmp/eucaback.dir
     mkdir -p "$BACKUPDIR"
@@ -953,6 +959,9 @@ usermod -a -G kvm eucalyptus
 # %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Sat Aug 18 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-13
+- fix to allow axis2 / rampart includedir outside to axis2c_home
+
 * Fri Aug 17 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-12
 - fix axis2 symlinks
 - deal with broken Lob entities
@@ -999,13 +1008,3 @@ usermod -a -G kvm eucalyptus
 
 * Mon Aug 06 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-1
 - Experimental Fedora build
-
-* Thu Jan 19 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.0.0-1
-- Update to Eucalyptus 3.0
-
-* Tue Jun  1 2010 Eucalyptus Release Engineering <support@eucalyptus.com> - 2.0.0-1
-- Version 2.0 of Eucalyptus Enterprise Cloud
-  - Windows VM Support
-  - User/Group Management
-  - SAN Integration
-  - VMWare Hypervisor Support

@@ -1,0 +1,28 @@
+diff -ur eucalyptus-3.1.0.orig/configure eucalyptus-3.1.0/configure
+--- eucalyptus-3.1.0.orig/configure	2012-08-16 23:14:00.585938864 -0400
++++ eucalyptus-3.1.0/configure	2012-08-18 10:07:10.102716060 -0400
+@@ -4124,6 +4124,10 @@
+                 for x in ${AXIS2C_HOME}/include/axis2-* ${AXIS2C_HOME}/include/rampart-*; do
+                         INCLUDES="${INCLUDES} -I$x"
+                 done
++        else
++                for x in /usr/include/axis2-* /usr/include/rampart-*; do
++                        INCLUDES="${INCLUDES} -I$x"
++                done
+         fi
+         if test -d "${AXIS2C_HOME}"/lib ; then
+                 LDFLAGS="-L${AXIS2C_HOME}/lib ${LDFLAGS}"
+diff -ur eucalyptus-3.1.0.orig/configure.ac eucalyptus-3.1.0/configure.ac
+--- eucalyptus-3.1.0.orig/configure.ac	2012-08-16 23:14:00.587938882 -0400
++++ eucalyptus-3.1.0/configure.ac	2012-08-18 10:06:36.011376622 -0400
+@@ -124,6 +124,10 @@
+                 for x in ${AXIS2C_HOME}/include/axis2-* ${AXIS2C_HOME}/include/rampart-*; do
+                         INCLUDES="${INCLUDES} -I$x"
+                 done
++        else
++                for x in /usr/include/axis2-* /usr/include/rampart-*; do
++                        INCLUDES="${INCLUDES} -I$x"
++                done
+         fi
+         if test -d "${AXIS2C_HOME}"/lib ; then
+                 LDFLAGS="-L${AXIS2C_HOME}/lib ${LDFLAGS}"
