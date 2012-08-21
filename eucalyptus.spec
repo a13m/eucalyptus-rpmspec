@@ -36,7 +36,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       13%{?dist}
+Release:       14%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -213,6 +213,8 @@ Source5:       eucalyptus-nc.service
 Source6:       axis2.xml
 Source7:       eucalyptus-cc.init
 Source8:       eucalyptus-nc.init
+# Note that these needed to be adapted for httpd 2.4
+# See http://httpd.apache.org/docs/2.4/upgrading.html
 Source9:       httpd-cc.conf
 Source10:      httpd-nc.conf
 
@@ -241,6 +243,7 @@ Patch11:        eucalyptus-disable-gwt-in-makefile.patch
 Patch12:       eucalyptus-pg-hibernate.patch
 
 # Kill all hardcoded paths
+# https://eucalyptus.atlassian.net/browse/EUCA-3331
 Patch13:       eucalyptus-macro-fix.patch
 
 # Make one repo per service of Axis2 services
@@ -584,6 +587,15 @@ computing service that is interface-compatible with Amazon AWS.
 This package contains the Python library used by Eucalyptus administration
 tools.  It is neither intended nor supported for use by any other programs.
 
+%package axis2-clients
+Summary:      Axis2/C web service clients for Eucalyptus services
+License:      GPLv3
+Requires:     wso2-axis2
+
+%description axis2-clients
+This package contains three debugging programs for testing Eucalyptus
+components which run as Axis2/C webservices.
+
 %prep
 %setup -q
 %patch0 -p1
@@ -723,6 +735,11 @@ ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/nc/lib
 ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/cc/services
 ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/nc/services
 
+# Install axis2 test client files
+install -m 644 gatherlog/GLclient $RPM_BUILD_ROOT%{_bindir}
+install -m 644 node/NCclient $RPM_BUILD_ROOT%{_bindir}
+install -m 644 cluster/CCclient $RPM_BUILD_ROOT%{_bindir}
+
 %files
 %doc LICENSE INSTALL README CHANGELOG
 %{eucaconfdir}/eucalyptus.conf
@@ -854,6 +871,11 @@ ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_servic
 %files -n python%{?pybasever}-eucadmin
 %{python_sitelib}/eucadmin*
 
+%files axis2-clients
+%{_bindir}/NCclient
+%{_bindir}/CCclient
+%{_bindir}/GLclient
+
 %pre
 getent group eucalyptus >/dev/null || groupadd -r eucalyptus
 ## FIXME:  Make QA (and Eucalyptus proper?) work with /sbin/nologin as the shell [RT:2092]
@@ -959,6 +981,10 @@ usermod -a -G kvm eucalyptus
 # %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Tue Aug 21 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-14
+- add axis2-clients subpackage
+- adapt apache configs for 2.4
+
 * Sat Aug 18 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-13
 - fix to allow axis2 / rampart includedir outside to axis2c_home
 
