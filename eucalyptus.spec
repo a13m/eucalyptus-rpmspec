@@ -738,7 +738,7 @@ ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_servic
 # Install axis2 test client files
 install -m 644 gatherlog/GLclient $RPM_BUILD_ROOT%{_bindir}
 install -m 644 node/NCclient $RPM_BUILD_ROOT%{_bindir}
-install -m 644 cluster/CCclient $RPM_BUILD_ROOT%{_bindir}
+install -m 644 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 
 %files
 %doc LICENSE INSTALL README CHANGELOG
