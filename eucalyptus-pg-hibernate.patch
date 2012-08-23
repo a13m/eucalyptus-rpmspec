@@ -291,3 +291,22 @@ diff -ur eucalyptus-3.1.0.orig/clc/modules/msgs/src/main/java/com/eucalyptus/rec
    @Column( name = "record_extra" )
    private String                            extra;
    @Column( name = "record_level" )
+--- eucalyptus-3.1.0.orig/clc/modules/cluster-manager/src/main/java/com/eucalyptus/images/PutGetImageInfo.java	2012-06-19 14:41:48.000000000 -0400
++++ eucalyptus-3.1.0/clc/modules/cluster-manager/src/main/java/com/eucalyptus/images/PutGetImageInfo.java	2012-08-23 16:29:02.238625949 -0400
+@@ -70,6 +70,8 @@
+ import javax.persistence.MappedSuperclass;
+ import com.eucalyptus.auth.principal.UserFullName;
+ import com.eucalyptus.cloud.ImageMetadata;
++import org.hibernate.annotations.Type;
++import org.hibernate.type.StringClobType;
+ 
+ @MappedSuperclass
+ public class PutGetImageInfo extends ImageInfo implements ImageMetadata.StaticDiskImage {
+@@ -77,6 +80,7 @@
+   private String manifestLocation;
+   
+   @Lob
++  @Type(type="org.hibernate.type.StringClobType")
+   @Column( name = "metadata_image_signature" )
+   private String signature;
+   
