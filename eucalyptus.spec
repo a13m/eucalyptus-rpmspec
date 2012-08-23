@@ -1,4 +1,4 @@
-%global axis2c_home       /usr/lib64/wso2-axis2
+%global axis2c_home       %{_libdir}/wso2-axis2
 %global axis2c_services   %{_libdir}/eucalyptus/axis2
 %global euca_dhcp         dhcp
 %global euca_bridge       br0
