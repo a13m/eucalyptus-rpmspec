@@ -36,7 +36,7 @@ Provides: %{name}-abi = %{abi_version} \
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       14%{?dist}
+Release:       15%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -218,6 +218,9 @@ Source8:       eucalyptus-nc.init
 Source9:       httpd-cc.conf
 Source10:      httpd-nc.conf
 
+# Axis2/Java code generation is broken with v1.6
+Source11:      eucalyptus-3.1.0-generated.tgz
+
 # https://eucalyptus.atlassian.net/browse/EUCA-2364
 Patch0:        eucalyptus-jdk7.patch
 # https://eucalyptus.atlassian.net/browse/EUCA-3253
@@ -254,6 +257,10 @@ Patch15:       eucalyptus-rootwrap-python.patch
 
 # Fix include location for axis2 libs
 Patch16:       eucalyptus-wso2-axis2-configure.patch
+
+# Fix postgres config and improve logging for pg startup
+# Related: https://eucalyptus.atlassian.net/browse/EUCA-3334
+Patch17:       eucalyptus-fix-setupdb.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -598,13 +605,16 @@ components which run as Axis2/C webservices.
 
 %prep
 %setup -q
+pushd ..
+tar xzf %{SOURCE11}
+popd
 %patch0 -p1
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
 %patch6 -p1
-%patch7 -p1
+# %patch7 -p1
 %patch8 -p1
 %patch9 -p1
 %patch10 -p1
@@ -736,13 +746,14 @@ ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_servic
 ln -s %{axis2c_services}/gl/services/EucalyptusGL $RPM_BUILD_ROOT%{axis2c_services}/nc/services
 
 # Install axis2 test client files
-install -m 644 gatherlog/GLclient $RPM_BUILD_ROOT%{_bindir}
-install -m 644 node/NCclient $RPM_BUILD_ROOT%{_bindir}
-install -m 644 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
+install -d -m 755 $RPM_BUILD_ROOT%{_bindir}
+install -m 755 gatherlog/GLclient $RPM_BUILD_ROOT%{_bindir}
+install -m 755 node/NCclient $RPM_BUILD_ROOT%{_bindir}
+install -m 755 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 
 %files
 %doc LICENSE INSTALL README CHANGELOG
-%{eucaconfdir}/eucalyptus.conf
+%attr(-,eucalyptus,eucalyptus) %{eucaconfdir}/eucalyptus.conf
 %{eucaconfdir}/eucalyptus-version
 %{eucaconfdir}/axis2.xml
 %attr(-,root,eucalyptus) %dir %{eucalibexecdir}
@@ -981,6 +992,11 @@ usermod -a -G kvm eucalyptus
 # %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Wed Aug 22 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-15
+- Init script fixes
+- a few fixes to the macro patch
+- add generated code tarball
+
 * Tue Aug 21 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-14
 - add axis2-clients subpackage
 - adapt apache configs for 2.4

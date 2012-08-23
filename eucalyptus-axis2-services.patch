@@ -1,8 +1,9 @@
+
 diff -ur eucalyptus-3.1.0.orig/cluster/Makefile eucalyptus-3.1.0/cluster/Makefile
---- eucalyptus-3.1.0.orig/cluster/Makefile	2012-08-14 22:26:39.111376439 -0400
-+++ eucalyptus-3.1.0/cluster/Makefile	2012-08-15 17:38:06.523469535 -0400
+--- eucalyptus-3.1.0.orig/cluster/Makefile	2012-08-21 14:50:00.321348865 -0400
++++ eucalyptus-3.1.0/cluster/Makefile	2012-08-21 14:56:05.743315133 -0400
 @@ -87,25 +87,25 @@
- 	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
+ 	$(CC) -o $(CLIENTKILLALL) $(CFLAGS) $(INCLUDES) $(CLIENT).c cc-client-marshal-adb.c -DMODE=0 generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o $(WSSECLIBS) $(CC_LIBS)
  
  fakedeploy:
 -	$(INSTALL) $(SERVICE_SO_FAKE) $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(SERVICE_SO)
@@ -21,9 +22,8 @@ diff -ur eucalyptus-3.1.0.orig/cluster/Makefile eucalyptus-3.1.0/cluster/Makefil
  
  #ws-sec
 -	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(CCWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml
--	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2C_HOME):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
 +	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/$(CCWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(DESTDIR)$(AXIS2_CC_SERVICES)/$(SERVICE_NAME)/services_WS.xml
-+	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2_CC_REPO):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
+ 	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2C_HOME):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
  ##	cp ../tools/*.pem $(EUCALYPTUS)/var/lib/eucalyptus/keys/
  #	cp cc-client-policy.xml $(EUCALYPTUS)/var/lib/eucalyptus/keys/
  #	chmod -R 0600 $(EUCALYPTUS)/var/lib/eucalyptus/keys/*
@@ -55,10 +55,10 @@ diff -ur eucalyptus-3.1.0.orig/gatherlog/GLclient.c eucalyptus-3.1.0/gatherlog/G
    env =  axutil_env_create_all("/tmp/fooh", AXIS2_LOG_LEVEL_TRACE);
    client_home = AXIS2_GETENV("AXIS2C_HOME");
 diff -ur eucalyptus-3.1.0.orig/gatherlog/Makefile eucalyptus-3.1.0/gatherlog/Makefile
---- eucalyptus-3.1.0.orig/gatherlog/Makefile	2012-08-14 22:26:39.113376459 -0400
-+++ eucalyptus-3.1.0/gatherlog/Makefile	2012-08-15 17:39:41.556477413 -0400
+--- eucalyptus-3.1.0.orig/gatherlog/Makefile	2012-08-21 14:50:00.322348865 -0400
++++ eucalyptus-3.1.0/gatherlog/Makefile	2012-08-21 14:57:30.990307309 -0400
 @@ -47,22 +47,22 @@
- 	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
+ 	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(CLIENT).c gl-client-marshal-adb.c generated/adb_*.o generated/axis2_stub_*.o ../util/misc.o ../storage/diskutil.o ../util/ipc.o ../util/euca_auth.o -DMODE=1 $(LIBS) $(LDFLAGS) -lssl -lcrypto
  
  deploy:
 -	$(INSTALL) -d $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
@@ -73,9 +73,8 @@ diff -ur eucalyptus-3.1.0.orig/gatherlog/Makefile eucalyptus-3.1.0/gatherlog/Mak
  
  #ws-sec
 -#	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2C_SERVICES)/$(SERVICE_NAME)/$(GLWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(AXIS2C_SERVICES)/$(SERVICE_NAME)/services_WS.xml
--#	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2C_HOME):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
 +#	cat generated/services.xml | ../tools/add_wsdllocation.pl $(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/$(GLWSDLNAME) | ../tools/add_service_policy.pl ../tools/service-policy-template.xml | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > $(AXIS2_GL_SERVICES)/$(SERVICE_NAME)/services_WS.xml
-+#	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2_GL_REPO):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
+ #	cat ../tools/client-policy-template.xml | sed "s:EUCALYPTUS_HOME:$(EUCALYPTUS):g" | sed "s:AXIS2C_HOME:$(AXIS2C_HOME):g" | sed "s:CLIENT-CERT:cloud-cert.pem:g" | sed "s:SERVER-CERT:cluster-cert.pem:g" | sed "s:SERVER-KEY:cluster-pk.pem:g" | sed "s:CLIENT-KEY:cloud-pk.pem:g" | sed "s:CLIENT-USERNAME:eucalyptus:g" > cc-client-policy.xml
  #	cp ../tools/*.pem $(EUCALYPTUS)/var/lib/eucalyptus/keys/
  #	cp cc-client-policy.xml $(EUCALYPTUS)/var/lib/eucalyptus/keys/
  #	chmod -R 0600 $(EUCALYPTUS)/var/lib/eucalyptus/keys/*

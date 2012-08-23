@@ -203,7 +203,7 @@ diff -ur eucalyptus-3.1.0.old/clc/modules/msgs/src/main/java/com/eucalyptus/syst
 -  LIB( BaseDirectory.HOME, "/usr/share/eucalyptus" ),
 -  RUNDB( BaseDirectory.HOME, "/var/run/eucalyptus/db") {
 +  LIB( BaseDirectory.LIB, "" ),
-+  RUNDB( BaseDirectory.STATE, "/db") {
++  RUNDB( BaseDirectory.RUN, "/db") {
  
      @Override
      protected void assertPermissions() {
@@ -1736,6 +1736,15 @@ diff -ur eucalyptus-3.1.0.old/node/handlers.c eucalyptus-3.1.0.good/node/handler
      
  	if (init())
  		return 1;
+@@ -1466,7 +1466,7 @@
+ 		return ret;
+ 	}
+     
+-	sprintf(file_name, "%s/%s", nc_state.home, NC_MONIT_FILENAME);
++	sprintf(file_name, NC_MONIT_FILENAME, nc_state.home);
+ 	if (!strcmp(meta->userId, EUCALYPTUS_ADMIN)) {
+ 		f = fopen(file_name, "w");
+ 		if (!f) {
 @@ -1821,7 +1821,7 @@
      }
      
@@ -1852,7 +1861,7 @@ diff -ur eucalyptus-3.1.0.old/node/Makefile eucalyptus-3.1.0.good/node/Makefile
  
  $(SERVICE_SO): generated/stubs $(STORAGE_OBJS) ../net/vnetwork.o ../util/misc.o ../util/hash.o ../util/data.o server-marshal.o handlers.o $(NC_HANDLERS) ../util/eucalyptus.h ../util/euca_auth.o ../storage/http.o ../util/windows-bundle.o
 -	$(CC) -o $(SERVICE_SO) -shared generated/adb_*.o generated/axis2*_skel_*.o server-marshal.o handlers.o $(NC_HANDLERS) $(STORAGE_OBJS) ../net/*.o ../util/*.o ../storage/http.o ../storage/storage-windows.o $(NC_LIBS) $(EFENCE)
-+	$(CC) -o $(SERVICE_SO) -shared generated/adb_*.o generated/axis2*_skel_*.o generated/axis2_ext*.o server-marshal.o handlers.o $(NC_HANDLERS) $(STORAGE_OBJS) ../net/*.o ../util/*.o ../storage/http.o ../storage/storage-windows.o $(NC_LIBS) $(EFENCE)
++	$(CC) -o $(SERVICE_SO) -shared generated/adb_*.o generated/axis2*_skel_*.o server-marshal.o handlers.o $(NC_HANDLERS) $(STORAGE_OBJS) ../net/*.o ../util/*.o ../storage/http.o ../storage/storage-windows.o $(NC_LIBS) $(EFENCE)
  
  clientlib: generated/stubs ../util/data.o client-marshal-adb.o
  
@@ -1860,8 +1869,8 @@ diff -ur eucalyptus-3.1.0.old/node/Makefile eucalyptus-3.1.0.good/node/Makefile
  fake: $(CLIENT)_fake
  
  $(CLIENT): generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o $(CLIENT).c ../storage/vbr.o
--	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o generated/axis2_ext*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
-+	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_ext*.o generated/axis2_stub_*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
+-	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
++	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
  
  $(CLIENT)_fake: generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o client-marshal-fake.o $(CLIENT).c ../storage/vbr.o
  
