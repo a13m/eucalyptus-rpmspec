@@ -197,7 +197,7 @@ Requires(post): %{_sbindir}/euca_conf
 
 %provide_abi
 
-Source0:       %{name}-%{version}.tar.gz
+Source0:       http://downloads.eucalyptus.com/software/eucalyptus/3.1/source/eucalyptus-3.1.0.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
 Source1:       euca-WSDL2C.sh
 Source2:       eucalyptus-jarlinks.txt
@@ -219,6 +219,9 @@ Source9:       httpd-cc.conf
 Source10:      httpd-nc.conf
 
 # Axis2/Java code generation is broken with v1.6
+# This code was generated using 1.4; note that 1.5 should also work, and 
+# the 1.5 source is included in wso2-wsf-cpp package, but not currently
+# built into a subpackage.
 Source11:      eucalyptus-3.1.0-generated.tgz
 
 # https://eucalyptus.atlassian.net/browse/EUCA-2364
@@ -233,7 +236,7 @@ Patch4:        eucalyptus-groovy18.patch
 Patch5:        eucalyptus-guava-11.patch
 Patch6:        eucalyptus-guava-13.patch
 # This patch is required if we used Axis2/Java 1.6 for code generation.
-Patch7:        eucalyptus-axis2-java-1.6.patch
+# Patch7:        eucalyptus-axis2-java-1.6.patch
 # Minor log4j interface change
 Patch8:        eucalyptus-log4j-fix.patch
 
@@ -369,6 +372,7 @@ Requires: mule-module-client
 Requires: mule-module-spring-config
 Requires: mule-module-xml
 Requires: mule-transport-vm
+Requires: mx4j
 Requires: netty31
 Requires: objectweb-asm
 Requires: postgresql-jdbc
@@ -396,11 +400,6 @@ Requires: xml-security
 Requires: xom
 Requires: xpp3
 Requires:     %{_sbindir}/euca_conf
-
-# NOTE: mx4j is not a build requirement, but I had runtime issues without it.
-# Even stranger, it must _not_ be in the classpath at db initialization,
-# but must be there later.
-Requires: mx4j
 
 %provide_abi common-java
 
@@ -624,6 +623,7 @@ popd
 %patch14 -p1
 %patch15 -p1
 %patch16 -p1
+%patch17 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -760,7 +760,6 @@ install -m 755 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_mountwrap
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_rootwrap
 %dir %{eucadatadir}
-
 %{_sbindir}/euca_sync_key
 
 # helperdir is either eucadatadir or eucalibexecdir
@@ -911,8 +910,6 @@ if [ "$1" = "2" ]; then
 
     # Back up important data as well as all of the previous installation's jars.
     BACKUPDIR="%{eucastatedir}/upgrade/eucalyptus.backup.`date +%%s`"
-    ## FIXME:  What cleans this file up?
-    echo "$BACKUPDIR" > /tmp/eucaback.dir
     mkdir -p "$BACKUPDIR"
     EUCABACKUPS=""
     for i in %{eucastatedir}/keys/ %{eucastatedir}/db/ %{eucastatedir}/services %{eucaconfidr}/eucalyptus.conf %{eucaconfdir}/eucalyptus-version %{eucajavalibdir} %{eucahelperdir}; do
@@ -935,21 +932,19 @@ udevadm control --reload-rules
 %{_sbindir}/euca_conf -d / --instances %{eucastatedir}/instances --hypervisor %{euca_hypervisor} --bridge %{euca_bridge}
 
 if [ "$1" = "2" ]; then
-    if [ -f /tmp/eucaback.dir ]; then
-        BACKDIR=`cat /tmp/eucaback.dir`
-        if [ -d "$BACKDIR" ]; then
-            %{helperdir}/euca_upgrade --old $BACKDIR --new / --conf >%{eucalogdir}/upgrade-config.log 2>&1
-        fi
+    if [ -f %{eucaconfdir}/.upgrade ]; then
+        while IFS=: read -r a b; do
+            OLD_EUCA_VERSION=$a
+            OLD_EUCA_PATH=$b
+        done < $EUCALYPTUS/etc/eucalyptus/.upgrade
+        %{helperdir}/euca_upgrade --old $OLD_EUCA_PATH --new / --conf >%{eucalogdir}/upgrade-config.log 2>&1
     fi
 fi
-
-# Final setup and set the new user
-%{_sbindir}/euca_conf --setup --user eucalyptus
 
 exit 0
 
 %post common-java
-# %{systemd_post} eucalyptus-cloud.service
+%{systemd_post} eucalyptus-cloud.service
 
 %post sc
 # XXX: this should be represented by systemd deps
@@ -958,38 +953,35 @@ chkconfig --add tgtd
 /sbin/service tgtd start
 
 %post cc
-# %{systemd_post} eucalyptus-cc.service
+%{systemd_post} eucalyptus-cc.service
 
 %post nc
 usermod -a -G kvm eucalyptus
-# %{systemd_post} eucalyptus-nc.service
+%{systemd_post} eucalyptus-nc.service
 
 %postun common-java
 # XXX: This is probably superfluous, because at least one of
 # sc / walrus / cloud will do a restart here, too.
-# %{systemd_postun_with_restart} eucalyptus-cloud.service
+%{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %postun cloud
-# XXX: Is this right?
-# %{systemd_postun_with_restart} eucalyptus-cloud.service
+%{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %postun walrus
-# XXX: Is this right?
-# %{systemd_postun_with_restart} eucalyptus-cloud.service
+%{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %postun sc
-# XXX: Is this right?
-# %{systemd_postun_with_restart} eucalyptus-cloud.service
+%{systemd_postun_with_restart} eucalyptus-cloud.service
 
 %preun common-java
-# %{systemd_preun} eucalyptus-cloud.service
+%{systemd_preun} eucalyptus-cloud.service
 
 %preun cc
 %{_sbindir}/eucalyptus-cc.init cleanstop
-# %{systemd_preun} eucalyptus-cc.service
+%{systemd_preun} eucalyptus-cc.service
 
 %preun nc
-# %{systemd_preun} eucalyptus-nc.service
+%{systemd_preun} eucalyptus-nc.service
 
 %changelog
 * Wed Aug 22 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-15
