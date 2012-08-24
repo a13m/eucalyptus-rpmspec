@@ -147,7 +147,7 @@ do_start() {
 	ulimit -u 100000
 	ulimit -n 10000
 	# now we start the services
-	if  ! httpd -f $EUCACONFDIR/httpd-cc.conf ; then
+	if  ! httpd -f $EUCACONFDIR/httpd/conf/httpd-cc.conf ; then
 		echo
 		echo "Failed to start the CC!"
 		exit 1

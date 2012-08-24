@@ -1,17 +1,5 @@
 %global axis2c_home       %{_libdir}/wso2-axis2
 %global axis2c_services   %{_libdir}/eucalyptus/axis2
-%global euca_dhcp         dhcp
-%global euca_bridge       br0
-%global euca_build_req    vconfig, wget, rsync
-%global euca_curl         curl
-%global euca_httpd        httpd
-%global euca_hypervisor   kvm
-%global euca_iscsi_client iscsi-initiator-utils
-%global euca_iscsi_server scsi-target-utils
-%global euca_libcurl      curl-devel
-%global euca_libvirt      libvirt
-%global euca_which        which
-%global spring            springframework
 %global eucaconfdir       %{_sysconfdir}/eucalyptus
 %global eucalibexecdir    %{_libexecdir}/eucalyptus
 %global eucalogdir        %{_localstatedir}/log/eucalyptus
@@ -23,79 +11,47 @@
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
-%define provide_abi() \
-%{!?abi_version: %define abi_version %{version}-%{release}} \
-%if 0%# \
-Provides: %{name}-abi(%1) = %{abi_version} \
-%else \
-Provides: %{name}-abi = %{abi_version} \
-%endif \
-%{nil}
-
-
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       15%{?dist}
+Release:       18%{?dist}
 License:       GPLv3
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
 
-BuildRequires: ant >= 1.7
-BuildRequires: ant-nodeps >= 1.7
-BuildRequires: axis2
+BuildRequires: help2man
 BuildRequires: java-devel >= 1:1.6.0
 BuildRequires: jpackage-utils
 BuildRequires: libvirt-devel >= 0.6
-BuildRequires: libxml2-devel
 BuildRequires: libxslt-devel
 BuildRequires: openssl-devel
-BuildRequires: python%{?pybasever}-devel
-BuildRequires: python%{?pybasever}-setuptools
+BuildRequires: python-boto >= 2.1
+BuildRequires: python-devel
+BuildRequires: python-setuptools
 BuildRequires: swig
-BuildRequires: velocity
 BuildRequires: wso2-axis2-devel
 BuildRequires: wso2-rampart-devel
 BuildRequires: wso2-wsf-cpp-devel
-BuildRequires: /usr/bin/awk
+BuildRequires: iscsi-initiator-utils
+BuildRequires: curl-devel
 
-BuildRequires: %{euca_iscsi_client}
-BuildRequires: %{euca_libvirt}-devel
-BuildRequires: %{euca_libvirt}
-BuildRequires: %{euca_libcurl}
-
-# Java stuff moving out of cloud-lib
-BuildRequires: ant
+BuildRequires: ant >= 1.7
 BuildRequires: antlr-tool
-BuildRequires: apache-commons-beanutils
-BuildRequires: apache-commons-cli
 BuildRequires: apache-commons-codec
-BuildRequires: apache-commons-collections
 BuildRequires: apache-commons-compress
-BuildRequires: apache-commons-digester
-BuildRequires: apache-commons-discovery
 BuildRequires: apache-commons-fileupload
 BuildRequires: apache-commons-io
-BuildRequires: apache-commons-jxpath
 BuildRequires: apache-commons-lang
-BuildRequires: apache-commons-logging
-BuildRequires: apache-commons-pool
-BuildRequires: avalon-framework
-BuildRequires: avalon-logkit
 BuildRequires: axiom
+# BuildRequires: axis2
 BuildRequires: backport-util-concurrent
 BuildRequires: batik
 BuildRequires: bcel
 BuildRequires: bouncycastle
-BuildRequires: bsf
 BuildRequires: btm
-BuildRequires: cglib
 BuildRequires: dnsjava
-BuildRequires: dom4j
-BuildRequires: ehcache-core
+# Should be a json-lib Requires
 BuildRequires: ezmorph
-BuildRequires: geronimo-ejb
-BuildRequires: geronimo-jms
 BuildRequires: geronimo-jta
 BuildRequires: groovy
 BuildRequires: guava >= 12
@@ -106,87 +62,40 @@ BuildRequires: hibernate3-ehcache
 BuildRequires: hibernate3-entitymanager
 BuildRequires: hibernate3-jbosscache
 BuildRequires: hibernate3-proxool
-BuildRequires: hibernate-commons-annotations
 BuildRequires: hibernate-jpa-2.0-api
-BuildRequires: hsqldb
 BuildRequires: jakarta-commons-httpclient
+# NOTE: jasperreports is not yet used, but will be soon
+BuildRequires: jasperreports 
 BuildRequires: javamail
-BuildRequires: javassist
-BuildRequires: java-uuid-generator
-BuildRequires: jaxen
-BuildRequires: jbosscache-core
-BuildRequires: jboss-common-core
-BuildRequires: jboss-connector-1.6-api
-BuildRequires: jboss-logging
-BuildRequires: jboss-marshalling
-BuildRequires: jcip-annotations
-BuildRequires: jettison
 BuildRequires: jetty
-BuildRequires: jetty-ajp
-BuildRequires: jetty-annotations
-BuildRequires: jetty-client
-BuildRequires: jetty-continuation
-BuildRequires: jetty-deploy
-BuildRequires: jetty-http
-BuildRequires: jetty-io
-BuildRequires: jetty-jmx
-BuildRequires: jetty-jndi
-BuildRequires: jetty-overlay-deployer
-BuildRequires: jetty-plus
-BuildRequires: jetty-policy
-BuildRequires: jetty-rewrite
-BuildRequires: jetty-security
-BuildRequires: jetty-server
-BuildRequires: jetty-servlet
-BuildRequires: jetty-servlets
-BuildRequires: jetty-util
-BuildRequires: jetty-webapp
-BuildRequires: jetty-websocket
-BuildRequires: jetty-xml
 BuildRequires: jgroups212
 BuildRequires: jibx
-BuildRequires: jna
 BuildRequires: jsch
 BuildRequires: json-lib
-BuildRequires: jsr-305
 BuildRequires: junit
 BuildRequires: log4j
-BuildRequires: mule
 BuildRequires: mule-module-builders
 BuildRequires: mule-module-client
-BuildRequires: mule-module-management
-BuildRequires: mule-module-spring-config
 BuildRequires: mule-module-xml
 BuildRequires: mule-transport-vm
 BuildRequires: netty31
-BuildRequires: objectweb-asm
-BuildRequires: postgresql-jdbc
-BuildRequires: proxool
-BuildRequires: quartz
-BuildRequires: regexp
-BuildRequires: slf4j
-BuildRequires: %{spring} 
-BuildRequires: %{spring}-beans
-BuildRequires: %{spring}-context
-BuildRequires: %{spring}-context-support
-BuildRequires: %{spring}-web
-BuildRequires: stax2-api
-BuildRequires: tomcat-el-2.2-api
+BuildRequires: springframework-context-support
+BuildRequires: springframework-web
 BuildRequires: tomcat-servlet-3.0-api
 BuildRequires: velocity
 BuildRequires: woodstox-core
 BuildRequires: wsdl4j
 BuildRequires: wss4j
 BuildRequires: xalan-j2
-BuildRequires: xerces-j2
 BuildRequires: xml-commons-apis
 BuildRequires: xml-security
+# Should be a json-lib Requires
 BuildRequires: xom
-BuildRequires: xpp3
-BuildRequires: xstream
 
-Requires:      %{euca_build_req}
-Requires:      %{euca_which}
+Requires:      vconfig
+Requires:      wget
+Requires:      rsync
+Requires:      which
 Requires:      libselinux-python
 Requires:      perl(Crypt::OpenSSL::RSA)
 Requires:      perl(Crypt::OpenSSL::Random)
@@ -194,8 +103,6 @@ Requires:      sudo
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
 Requires(post): %{_sbindir}/euca_conf
-
-%provide_abi
 
 Source0:       http://downloads.eucalyptus.com/software/eucalyptus/3.1/source/eucalyptus-3.1.0.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
@@ -217,12 +124,13 @@ Source8:       eucalyptus-nc.init
 # See http://httpd.apache.org/docs/2.4/upgrading.html
 Source9:       httpd-cc.conf
 Source10:      httpd-nc.conf
+Source11:      httpd-common.conf
 
 # Axis2/Java code generation is broken with v1.6
 # This code was generated using 1.4; note that 1.5 should also work, and 
 # the 1.5 source is included in wso2-wsf-cpp package, but not currently
-# built into a subpackage.
-Source11:      eucalyptus-3.1.0-generated.tgz
+# built into a subpackage. 
+Source12:      eucalyptus-3.1.0-generated.tgz
 
 # https://eucalyptus.atlassian.net/browse/EUCA-2364
 Patch0:        eucalyptus-jdk7.patch
@@ -281,127 +189,66 @@ Requires:     %{name} = %{version}-%{release}
 Requires:     jpackage-utils
 Requires:     java >= 1:1.6.0
 Requires:     lvm2
-Requires: ant
-Requires: antlr-tool
-Requires: apache-commons-beanutils
-Requires: apache-commons-cli
-Requires: apache-commons-codec
-Requires: apache-commons-collections
-Requires: apache-commons-compress
-Requires: apache-commons-digester
-Requires: apache-commons-discovery
-Requires: apache-commons-fileupload
-Requires: apache-commons-io
-Requires: apache-commons-jxpath
-Requires: apache-commons-lang
-Requires: apache-commons-logging
-Requires: apache-commons-pool
-Requires: avalon-framework
-Requires: avalon-logkit
-Requires: axiom
-Requires: backport-util-concurrent
-Requires: batik
-Requires: bcel
-Requires: bouncycastle
-Requires: bsf
-Requires: btm
-Requires: cglib
-Requires: dnsjava
-Requires: dom4j
-Requires: ehcache-core
-Requires: ezmorph
-Requires: geronimo-ejb
-Requires: geronimo-jms
-Requires: geronimo-jta
-Requires: groovy
-Requires: guava
-Requires: ha-jdbc
-Requires: hamcrest12
-Requires: hibernate3
-Requires: hibernate3-ehcache
-Requires: hibernate3-entitymanager
-Requires: hibernate3-jbosscache
-Requires: hibernate3-proxool
-Requires: hibernate-commons-annotations
-Requires: hibernate-jpa-2.0-api
-Requires: hsqldb
-Requires: jakarta-commons-httpclient
-Requires: javamail
-Requires: javassist
-Requires: java-uuid-generator
-Requires: jaxen
-Requires: jbosscache-core
-Requires: jboss-common-core
-Requires: jboss-connector-1.6-api
-Requires: jboss-logging
-Requires: jboss-marshalling
-Requires: jcip-annotations
-Requires: jettison
-Requires: jetty
-Requires: jetty-ajp
-Requires: jetty-annotations
-Requires: jetty-client
-Requires: jetty-continuation
-Requires: jetty-deploy
-Requires: jetty-http
-Requires: jetty-io
-Requires: jetty-jmx
-Requires: jetty-jndi
-Requires: jetty-overlay-deployer
-Requires: jetty-plus
-Requires: jetty-policy
-Requires: jetty-rewrite
-Requires: jetty-security
-Requires: jetty-server
-Requires: jetty-servlet
-Requires: jetty-servlets
-Requires: jetty-util
-Requires: jetty-webapp
-Requires: jetty-websocket
-Requires: jetty-xml
-Requires: jgroups212
-Requires: jibx
-Requires: jna
-Requires: jsch
-Requires: json-lib
-Requires: jsr-305
-Requires: log4j
-Requires: mule
-Requires: mule-module-builders
-Requires: mule-module-client
-Requires: mule-module-spring-config
-Requires: mule-module-xml
-Requires: mule-transport-vm
-Requires: mx4j
-Requires: netty31
-Requires: objectweb-asm
-Requires: postgresql-jdbc
-Requires: proxool
-Requires: quartz
-Requires: regexp
-Requires: slf4j
-Requires: %{spring}
-Requires: %{spring}-beans
-Requires: %{spring}-context
-Requires: %{spring}-context-support
-Requires: %{spring}-expression
-Requires: %{spring}-web
-Requires: stax2-api
-Requires: tomcat-el-2.2-api
-Requires: tomcat-servlet-3.0-api
-Requires: velocity
-Requires: woodstox-core
-Requires: wsdl4j
-Requires: wss4j
-Requires: xalan-j2
-Requires: xerces-j2
-Requires: xml-commons-apis
-Requires: xml-security
-Requires: xom
-Requires: xpp3
+Requires:     ant
+Requires:     antlr-tool
+Requires:     apache-commons-codec
+Requires:     apache-commons-collections
+Requires:     apache-commons-compress
+Requires:     apache-commons-fileupload
+Requires:     apache-commons-io
+Requires:     axiom
+Requires:     backport-util-concurrent
+Requires:     batik
+Requires:     bcel
+Requires:     bouncycastle
+Requires:     btm
+Requires:     dnsjava
+Requires:     dom4j
+Requires:     ezmorph
+Requires:     geronimo-jms
+Requires:     geronimo-jta
+Requires:     groovy
+Requires:     guava
+Requires:     ha-jdbc
+Requires:     hamcrest12
+Requires:     hibernate3
+Requires:     hibernate3-ehcache
+Requires:     hibernate3-entitymanager
+Requires:     hibernate3-jbosscache
+Requires:     hibernate3-proxool
+Requires:     hibernate-commons-annotations
+Requires:     hibernate-jpa-2.0-api
+Requires:     jakarta-commons-httpclient
+Requires:     javamail
+Requires:     jetty
+Requires:     jgroups212
+Requires:     jibx
+Requires:     jsch
+Requires:     json-lib
+Requires:     jsr-305
+Requires:     log4j
+Requires:     mule-module-builders
+Requires:     mule-module-client
+Requires:     mule-module-management
+Requires:     mule-module-spring-config
+Requires:     mule-module-xml
+Requires:     mule-transport-vm
+Requires:     mx4j
+Requires:     netty31
+Requires:     postgresql-jdbc
+Requires:     proxool
+Requires:     springframework-context-support
+Requires:     springframework-web
+Requires:     tomcat-servlet-3.0-api
+Requires:     velocity
+Requires:     woodstox-core
+Requires:     wsdl4j
+Requires:     wss4j
+Requires:     xalan-j2
+Requires:     xml-commons-apis
+Requires:     xml-security
+Requires:     xom
 Requires:     %{_sbindir}/euca_conf
-
-%provide_abi common-java
 
 %description common-java
 Eucalyptus is a service overlay that implements elastic computing
@@ -421,8 +268,6 @@ Requires(preun): systemd-units
 Requires(postun): systemd-units
 Requires(post): systemd-units
 
-%provide_abi walrus
-
 %description walrus
 Eucalyptus is a service overlay that implements elastic computing
 using existing resources. The goal of Eucalyptus is to allow sites
@@ -438,10 +283,8 @@ Summary:      Elastic Utility Computing Architecture - storage controller
 Requires:     %{name}             = %{version}-%{release}
 Requires:     %{name}-common-java = %{version}-%{release}
 Requires:     lvm2
-Requires:     %{euca_iscsi_client}
-Requires:     %{euca_iscsi_server}
-
-%provide_abi sc
+Requires:     iscsi-initiator-utils
+Requires:     scsi-target-utils
 
 %description sc
 Eucalyptus is a service overlay that implements elastic computing
@@ -468,8 +311,6 @@ Requires:     postgresql-server
 # For reporting web UI
 # Requires:     dejavu-serif-fonts
 
-%provide_abi cloud
-
 %description cloud
 Eucalyptus is a service overlay that implements elastic computing
 using existing resources. The goal of Eucalyptus is to allow sites
@@ -487,14 +328,12 @@ Requires:     %{name}-gl = %{version}-%{release}
 Requires:     bridge-utils
 Requires:     iptables
 Requires:     vtun
-Requires:     %{euca_dhcp}
-Requires:     %{euca_httpd}
+Requires:     dhcp
+Requires:     httpd
 Requires:     %{_sbindir}/euca_conf
 Requires(preun): systemd-units
 Requires(postun): systemd-units
 Requires(post): systemd-units
-
-%provide_abi cc
 
 %description cc
 Eucalyptus is a service overlay that implements elastic computing
@@ -519,17 +358,15 @@ Requires:     file
 Requires:     grub2
 Requires:     parted
 Requires:     util-linux
-Requires:     %{euca_curl}
-Requires:     %{euca_httpd}
-Requires:     %{euca_hypervisor}
-Requires:     %{euca_iscsi_client}
-Requires:     %{euca_libvirt}
+Requires:     curl
+Requires:     httpd
+Requires:     kvm
+Requires:     iscsi-initiator-utils
+Requires:     libvirt
 Requires:     %{_sbindir}/euca_conf
 Requires(preun): systemd-units
 Requires(postun): systemd-units
 Requires(post): systemd-units
-
-%provide_abi nc
 
 %description nc
 Eucalyptus is a service overlay that implements elastic computing
@@ -543,9 +380,7 @@ component handles instances.
 %package gl
 Summary:      Elastic Utility Computing Architecture - log service
 Requires:     %{name} = %{version}-%{release}
-Requires:     %{euca_httpd}
-
-%provide_abi gl
+Requires:     httpd
 
 %description gl
 Eucalyptus is a service overlay that implements elastic computing
@@ -559,11 +394,9 @@ This package contains the internal log service of eucalyptus.
 Summary:      Elastic Utility Computing Architecture - admin CLI tools
 License:      BSD
 Requires:     %{name} = %{version}-%{release}
-Requires:     python%{?pybasever}-eucadmin = %{version}-%{release}
+Requires:     python-eucadmin = %{version}-%{release}
 Requires:     rsync
 BuildArch:    noarch
-
-%provide_abi admin-tools
 
 %description admin-tools
 Eucalyptus is a service overlay that implements elastic computing
@@ -574,17 +407,15 @@ computing service that is interface-compatible with Amazon AWS.
 This package contains command line tools necessary for managing a
 Eucalyptus cluster.
 
-%package -n python%{?pybasever}-eucadmin
+%package -n python-eucadmin
 Summary:      Elastic Utility Computing Architecture - administration Python library
 License:      BSD
 Requires:     PyGreSQL
-Requires:     python%{?pybasever}-boto >= 2.1
+Requires:     python-boto >= 2.1
 Requires:     rsync
 BuildArch:    noarch
 
-%provide_abi python%{?pybasever}-eucadmin
-
-%description -n python%{?pybasever}-eucadmin
+%description -n python-eucadmin
 Eucalyptus is a service overlay that implements elastic computing
 using existing resources. The goal of Eucalyptus is to allow sites
 with existing clusters and server infrastructure to co-host an elastic
@@ -597,6 +428,7 @@ tools.  It is neither intended nor supported for use by any other programs.
 Summary:      Axis2/C web service clients for Eucalyptus services
 License:      GPLv3
 Requires:     wso2-axis2
+Requires:     %{name}-cc = %{version}-%{release}
 
 %description axis2-clients
 This package contains three debugging programs for testing Eucalyptus
@@ -605,7 +437,7 @@ components which run as Axis2/C webservices.
 %prep
 %setup -q
 pushd ..
-tar xzf %{SOURCE11}
+tar xzf %{SOURCE12}
 popd
 %patch0 -p1
 %patch2 -p1
@@ -683,6 +515,9 @@ done
 
 # FIXME: storage/Makefile breaks with parallel make
 LANG=en_US.UTF-8 make # %{?_smp_mflags}
+pushd clc/eucadmin
+( export PYTHONPATH=.; python gen_manpages.py )
+popd
 
 %install
 make install DESTDIR=$RPM_BUILD_ROOT
@@ -693,10 +528,22 @@ do
 done
 rm $RPM_BUILD_ROOT%{eucajavalibdir}/junit4*
 
+# Link jars not needed at build time
+ln -s /usr/share/java/mule/mule-module-management.jar $RPM_BUILD_ROOT%{eucajavalibdir}
+ln -s /usr/share/java/postgresql-jdbc.jar $RPM_BUILD_ROOT%{eucajavalibdir}
+ln -s /usr/share/java/avalon-framework-impl.jar $RPM_BUILD_ROOT%{eucajavalibdir}
+ln -s /usr/share/java/avalon-logkit.jar $RPM_BUILD_ROOT%{eucajavalibdir}
+ln -s /usr/share/java/proxool.jar $RPM_BUILD_ROOT%{eucajavalibdir}
+
+pushd clc/eucadmin/man
+mkdir -p $RPM_BUILD_ROOT/%{_mandir}/man1
+cp -p * $RPM_BUILD_ROOT/%{_mandir}/man1
+popd
+
 sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
-       -e 's#.*HYPERVISOR=.*#HYPERVISOR="%{euca_hypervisor}"#' \
+       -e 's#.*HYPERVISOR=.*#HYPERVISOR="kvm"#' \
        -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="%{eucastatedir}/instances"#' \
-       -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="%{euca_bridge}"#' \
+       -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="br0"#' \
        -e 's#.*USE_VIRTIO_DISK=.*#USE_VIRTIO_DISK="1"#' \
        -e 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' \
        $RPM_BUILD_ROOT%{eucaconfdir}/eucalyptus.conf
@@ -706,9 +553,17 @@ mv $RPM_BUILD_ROOT/etc/init.d/eucalyptus-cloud $RPM_BUILD_ROOT/%{_sbindir}/eucal
 rm -rf $RPM_BUILD_ROOT/etc/init.d
 cp -p %{SOURCE7} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-cc.init
 cp -p %{SOURCE8} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-nc.init
-cp -p %{SOURCE9} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd-cc.conf
-cp -p %{SOURCE10} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd-nc.conf
+
+# Make a server root for apache
+mkdir -p $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/
+cp -p %{SOURCE9} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-cc.conf
+cp -p %{SOURCE10} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-nc.conf
+cp -p %{SOURCE11} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-common.conf
+ln -s %{_libdir}/httpd/modules $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/modules
 rm $RPM_BUILD_ROOT/%{eucaconfdir}/httpd.conf
+
+sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-nc.conf
+sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-cc.conf
 
 # Create the directories where components store their data
 mkdir -p $RPM_BUILD_ROOT%{eucastatedir}
@@ -751,11 +606,25 @@ install -m 755 gatherlog/GLclient $RPM_BUILD_ROOT%{_bindir}
 install -m 755 node/NCclient $RPM_BUILD_ROOT%{_bindir}
 install -m 755 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 
+# Fix some file permissions found by rpmlint
+chmod -x $RPM_BUILD_ROOT%{eucastatedir}/keys/nc-client-policy.xml
+chmod -x $RPM_BUILD_ROOT%{eucastatedir}/keys/cc-client-policy.xml
+chmod -x $RPM_BUILD_ROOT%{axis2c_services}/cc/services/EucalyptusCC/eucalyptus_cc.wsdl
+chmod -x $RPM_BUILD_ROOT%{axis2c_services}/cc/services/EucalyptusCC/services.xml
+chmod -x $RPM_BUILD_ROOT%{axis2c_services}/gl/services/EucalyptusGL/eucalyptus_gl.wsdl
+chmod -x $RPM_BUILD_ROOT%{axis2c_services}/gl/services/EucalyptusGL/services.xml
+chmod -x $RPM_BUILD_ROOT%{axis2c_services}/nc/services/EucalyptusNC/services.xml
+chmod +x $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
+
 %files
 %doc LICENSE INSTALL README CHANGELOG
 %attr(-,eucalyptus,eucalyptus) %{eucaconfdir}/eucalyptus.conf
 %{eucaconfdir}/eucalyptus-version
 %{eucaconfdir}/axis2.xml
+%dir %{eucaconfdir}/httpd
+%dir %{eucaconfdir}/httpd/conf
+%{eucaconfdir}/httpd/conf/httpd-common.conf
+%{eucaconfdir}/httpd/modules
 %attr(-,root,eucalyptus) %dir %{eucalibexecdir}
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_mountwrap
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_rootwrap
@@ -814,7 +683,7 @@ install -m 755 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 %{_sbindir}/eucalyptus-cc.init
 %{axis2c_services}/cc
 %attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/CC
-%{eucaconfdir}/httpd-cc.conf
+%{eucaconfdir}/httpd/conf/httpd-cc.conf
 %{eucaconfdir}/vtunall.conf.template
 %{_libexecdir}/eucalyptus/shutdownCC
 %{helperdir}/dynserv.pl
@@ -829,7 +698,7 @@ install -m 755 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 %{_sbindir}/eucalyptus-nc.init
 %{axis2c_services}/nc
 %attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/instances
-%{eucaconfdir}/httpd-nc.conf
+%{eucaconfdir}/httpd/conf/httpd-nc.conf
 %{_sbindir}/euca_test_nc
 %{helperdir}/detach.pl
 %{helperdir}/gen_kvm_libvirt_xml
@@ -877,8 +746,9 @@ install -m 755 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 %{_sbindir}/euca-register-storage-controller
 %{_sbindir}/euca-register-vmware-broker
 %{_sbindir}/euca-register-walrus
+%{_mandir}/man1/*
 
-%files -n python%{?pybasever}-eucadmin
+%files -n python-eucadmin
 %{python_sitelib}/eucadmin*
 
 %files axis2-clients
@@ -929,7 +799,7 @@ exit 0
 %post
 udevadm control --reload-rules
 
-%{_sbindir}/euca_conf -d / --instances %{eucastatedir}/instances --hypervisor %{euca_hypervisor} --bridge %{euca_bridge}
+%{_sbindir}/euca_conf -d / --instances %{eucastatedir}/instances --hypervisor kvm --bridge br0
 
 if [ "$1" = "2" ]; then
     if [ -f %{eucaconfdir}/.upgrade ]; then
@@ -984,6 +854,19 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Fri Aug 24 2012 Andy Grimm <agrimm@gmail.com> - 3.1.0-18
+- Fix httpd configs
+- Fix image registration via pg-hibernate patch update
+
+* Fri Aug 24 2012 Andy Grimm <agrimm@gmail.com> - 3.1.0-17
+- prune transitive BuildRequires and Requires
+- remove some macros from the spec file
+- improve systemd units
+
+* Thu Aug 23 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-16
+- file permission fixes
+- generate man pages for admin tools
+
 * Wed Aug 22 2012 Eucalyptus Release Engineering <support@eucalyptus.com> - 3.1.0-15
 - Init script fixes
 - a few fixes to the macro patch

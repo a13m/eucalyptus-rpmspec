@@ -8,7 +8,7 @@ PIDFile=/var/run/eucalyptus/eucalyptus-nc.pid
 # EnvironmentFile=/etc/sysconfig/eucalyptus
 ExecStart=/bin/sh -x /usr/sbin/eucalyptus-nc.init start
 ExecStop=/bin/sh -x /usr/sbin/eucalyptus-nc.init stop
-PrivateTmp=false
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target

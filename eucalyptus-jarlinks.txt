@@ -4,7 +4,6 @@
 /usr/share/java/apache-commons-cli.jar
 /usr/share/java/apache-commons-collections.jar
 /usr/share/java/apache-commons-compress.jar
-/usr/share/java/apache-commons-discovery.jar
 /usr/share/java/apache-commons-fileupload.jar
 /usr/share/java/apache-commons-io.jar
 /usr/share/java/apache-commons-jxpath.jar
@@ -13,8 +12,6 @@
 /usr/share/java/apache-commons-logging-api.jar
 /usr/share/java/apache-commons-logging.jar
 /usr/share/java/apache-commons-pool.jar
-/usr/share/java/avalon-framework-impl.jar
-/usr/share/java/avalon-logkit.jar
 /usr/share/java/axiom/axiom-api.jar
 /usr/share/java/axiom/axiom-dom.jar
 /usr/share/java/axiom/axiom-impl.jar
@@ -57,7 +54,6 @@
 /usr/share/java/hibernate3/hibernate-proxool.jar
 /usr/share/java/hibernate/hibernate-commons-annotations.jar
 /usr/share/java/hibernate-jpa-2.0-api.jar
-/usr/share/java/hsqldb.jar
 /usr/share/java/jakarta-commons-httpclient.jar
 /usr/share/java/javamail/mail.jar
 /usr/share/java/javassist.jar
@@ -67,10 +63,7 @@
 /usr/share/java/jboss-common-core.jar
 /usr/share/java/jboss-connector-1.6-api.jar
 /usr/share/java/jboss-logging.jar
-/usr/share/java/jboss-marshalling.jar
-/usr/share/java/jboss-marshalling-river.jar
 /usr/share/java/jcip-annotations.jar
-/usr/share/java/jettison.jar
 /usr/share/java/jetty/jetty-ajp.jar
 /usr/share/java/jetty/jetty-annotations.jar
 /usr/share/java/jetty/jetty-client.jar
@@ -99,7 +92,6 @@
 /usr/share/java/jibx/run.jar
 /usr/share/java/jibx/schema.jar
 /usr/share/java/jibx/tools.jar
-/usr/share/java/jna.jar
 /usr/share/java/jsch.jar
 /usr/share/java/json-lib.jar
 /usr/share/java/jsr-305.jar
@@ -108,14 +100,11 @@
 /usr/share/java/mule/mule-core.jar
 /usr/share/java/mule/mule-module-builders.jar
 /usr/share/java/mule/mule-module-client.jar
-/usr/share/java/mule/mule-module-management.jar
 /usr/share/java/mule/mule-module-spring-config.jar
 /usr/share/java/mule/mule-module-xml.jar
 /usr/share/java/mule/mule-transport-vm.jar
 /usr/share/java/netty31.jar
 /usr/share/java/objectweb-asm/asm-all.jar
-/usr/share/java/postgresql-jdbc.jar
-/usr/share/java/proxool.jar
 /usr/share/java/qname.jar
 /usr/share/java/quartz.jar
 /usr/share/java/regexp.jar

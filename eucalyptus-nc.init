@@ -211,7 +211,7 @@ do_start() {
             fi
 	fi
 
-	if ! httpd -f $EUCACONFDIR/httpd-nc.conf ; then
+	if ! httpd -f $EUCACONFDIR/httpd/conf/httpd-nc.conf ; then
 		echo
 		echo "Failed to start the NC!"
 		exit 1
