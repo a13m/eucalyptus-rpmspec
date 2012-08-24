@@ -106,7 +106,7 @@ EUCACONFDIR=$EUCALYPTUS/etc/eucalyptus
 EUCADATADIR=$EUCALYPTUS/usr/share/eucalyptus
 EUCARUNDIR=$EUCALYPTUS/var/run/eucalyptus
 EUCALOGDIR=$EUCALYPTUS/var/log/eucalyptus
-EUCALIBEXECDIR="$EUCALYPTUS/usr/libexec/eucalyptus/"
+EUCALIBEXECDIR=$EUCALYPTUS/usr/libexec/eucalyptus/
 
 # crude way to start the axis2c services
 do_start() {
@@ -389,10 +389,10 @@ case "$1" in
                 fi
         fi
 	# start and stop are hard: we lose the CC state
-	if ( test -f $EUCALIBEXECDIR/shutdownCC ); then
-	    $EUCALIBEXECDIR/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
+	if ( test -f ${EUCALIBEXECDIR}/shutdownCC ); then
+	    ${EUCALIBEXECDIR}/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
 	else
-	    echo "WARNING: could not find $EUCALYPTUS$LIBEXECDIR/shutdownCC, please check location of executable"
+	    echo "WARNING: could not find $EUCALIBEXECDIR/shutdownCC, please check location of executable"
 	fi
 	
 	do_stop
@@ -435,10 +435,10 @@ case "$1" in
 		fi
 	fi
 
-	if ( test -f $EUCALYPTUS$LIBEXECDIR/shutdownCC ); then
-	    $EUCALYPTUS$LIBEXECDIR/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
+	if ( test -f $EUCALIBEXECDIR/shutdownCC ); then
+	    $EUCALIBEXECDIR/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
 	else
-	    echo "WARNING: could not find $EUCALYPTUS$LIBEXECDIR/shutdownCC, please check location of executable"
+	    echo "WARNING: could not find $EUCALIBEXECDIR/shutdownCC, please check location of executable"
 	fi
 
 	do_stop

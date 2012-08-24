@@ -546,6 +546,8 @@ sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
        -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="br0"#' \
        -e 's#.*USE_VIRTIO_DISK=.*#USE_VIRTIO_DISK="1"#' \
        -e 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' \
+       -e 's#.*VNET_PUBINTERFACE=.*#VNET_PUBINTERFACE="em1"#' \
+       -e 's#.*VNET_PRIVINTERFACE=.*#VNET_PRIVINTERFACE="em1"#' \
        $RPM_BUILD_ROOT%{eucaconfdir}/eucalyptus.conf
 
 # Move init scripts into sbindir and call them from systemd
