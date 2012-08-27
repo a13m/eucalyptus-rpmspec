@@ -1,21 +1,17 @@
 %global axis2c_home       %{_libdir}/wso2-axis2
-%global axis2c_services   %{_libdir}/eucalyptus/axis2
-%global eucaconfdir       %{_sysconfdir}/eucalyptus
-%global eucalibexecdir    %{_libexecdir}/eucalyptus
-%global eucalogdir        %{_localstatedir}/log/eucalyptus
-%global eucarundir        %{_localstatedir}/run/eucalyptus
-%global eucastatedir      %{_localstatedir}/lib/eucalyptus
-%global eucadatadir       %{_datadir}/eucalyptus
-%global eucajavalibdir    %{_datadir}/eucalyptus
-%global helperdir         %{_datadir}/eucalyptus
+%global axis2c_services   %{_libdir}/%{name}/axis2
+%global eucalibexecdir    %{_libexecdir}/%{name}
+%global eucadatadir       %{_datadir}/%{name}
+%global eucajavalibdir    %{_datadir}/%{name}
+%global helperdir         %{_datadir}/%{name}
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       18%{?dist}
-License:       GPLv3
+Release:       19%{?dist}
+License:       GPLv3 and (GPLv3 and ASL 2.0) and (GPLv3 and BSD)
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
 
@@ -34,6 +30,7 @@ BuildRequires: wso2-rampart-devel
 BuildRequires: wso2-wsf-cpp-devel
 BuildRequires: iscsi-initiator-utils
 BuildRequires: curl-devel
+BuildRequires: systemd-units
 
 BuildRequires: ant >= 1.7
 BuildRequires: antlr-tool
@@ -173,6 +170,12 @@ Patch16:       eucalyptus-wso2-axis2-configure.patch
 # Related: https://eucalyptus.atlassian.net/browse/EUCA-3334
 Patch17:       eucalyptus-fix-setupdb.patch
 
+# Use System.load with an absolute path for JNI lib load
+Patch18:       eucalyptus-jni-abspath.patch
+
+# Replace a non-ascii apostrophe with an ascii one.
+Patch19:       eucalyptus-fix-non-ascii.patch
+
 %description
 Eucalyptus is a service overlay that implements elastic computing
 using existing resources. The goal of Eucalyptus is to allow sites
@@ -285,6 +288,9 @@ Requires:     %{name}-common-java = %{version}-%{release}
 Requires:     lvm2
 Requires:     iscsi-initiator-utils
 Requires:     scsi-target-utils
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+Requires(post): systemd-units
 
 %description sc
 Eucalyptus is a service overlay that implements elastic computing
@@ -300,13 +306,16 @@ alongside the cluster controller.
 Summary:      Elastic Utility Computing Architecture - cloud controller
 Requires:     %{name}                     = %{version}-%{release}
 Requires:     %{name}-common-java%{?_isa} = %{version}-%{release}
-# bc is needed for /etc/eucalyptus/cloud.d/init.d/01_pg_kernel_params
+# bc is needed for /etc/%{name}/cloud.d/init.d/01_pg_kernel_params
 Requires:     bc
 Requires:     euca2ools >= 2.0
 Requires:     lvm2
 Requires:     perl(Getopt::Long)
 Requires:     postgresql
 Requires:     postgresql-server
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+Requires(post): systemd-units
 
 # For reporting web UI
 # Requires:     dejavu-serif-fonts
@@ -456,6 +465,8 @@ popd
 %patch15 -p1
 %patch16 -p1
 %patch17 -p1
+%patch18 -p1
+%patch19 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -504,7 +515,7 @@ export CFLAGS="%{optflags}"
 
 # symlink java deps
 mkdir clc/lib
-for x in $( cat %{S:2} ); 
+for x in $( cat %{SOURCE2} ); 
 do 
   if [ ! -e $x ]; then
     echo "Could not find $x"
@@ -514,19 +525,31 @@ do
 done
 
 # FIXME: storage/Makefile breaks with parallel make
-LANG=en_US.UTF-8 make # %{?_smp_mflags}
+make # %{?_smp_mflags}
 pushd clc/eucadmin
 ( export PYTHONPATH=.; python gen_manpages.py )
 popd
 
 %install
 make install DESTDIR=$RPM_BUILD_ROOT
-for x in $( cat %{S:2} | grep -v junit4 );
+for x in $( cat %{SOURCE2} | grep -v junit4 );
 do
   rm $RPM_BUILD_ROOT%{eucajavalibdir}/$( basename $x )
   ln -s $x $RPM_BUILD_ROOT%{eucajavalibdir}
 done
 rm $RPM_BUILD_ROOT%{eucajavalibdir}/junit4*
+
+# Fix jar paths and replace them with symlinks
+mkdir -p $RPM_BUILD_ROOT%{_javadir}/%{name}
+for x in $RPM_BUILD_ROOT%{eucajavalibdir}/eucalyptus-*; do
+  if [ $( basename $x ) == "eucalyptus-storagecontroller-%{version}.jar" ]; then
+    DESTFILE=%{_libdir}/%{name}/$( basename $x )
+  else
+    DESTFILE=%{_javadir}/%{name}/$( basename $x )
+  fi
+  mv $x $RPM_BUILD_ROOT$DESTFILE
+  ln -s $DESTFILE $RPM_BUILD_ROOT/%{eucajavalibdir}/
+done
 
 # Link jars not needed at build time
 ln -s /usr/share/java/mule/mule-module-management.jar $RPM_BUILD_ROOT%{eucajavalibdir}
@@ -542,13 +565,13 @@ popd
 
 sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
        -e 's#.*HYPERVISOR=.*#HYPERVISOR="kvm"#' \
-       -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="%{eucastatedir}/instances"#' \
+       -e 's#.*INSTANCE_PATH=.*#INSTANCE_PATH="/var/lib/%{name}/instances"#' \
        -e 's#.*VNET_BRIDGE=.*#VNET_BRIDGE="br0"#' \
        -e 's#.*USE_VIRTIO_DISK=.*#USE_VIRTIO_DISK="1"#' \
        -e 's#.*USE_VIRTIO_ROOT=.*#USE_VIRTIO_ROOT="1"#' \
        -e 's#.*VNET_PUBINTERFACE=.*#VNET_PUBINTERFACE="em1"#' \
        -e 's#.*VNET_PRIVINTERFACE=.*#VNET_PRIVINTERFACE="em1"#' \
-       $RPM_BUILD_ROOT%{eucaconfdir}/eucalyptus.conf
+       $RPM_BUILD_ROOT/etc/%{name}/eucalyptus.conf
 
 # Move init scripts into sbindir and call them from systemd
 mv $RPM_BUILD_ROOT/etc/init.d/eucalyptus-cloud $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-cloud.init
@@ -557,23 +580,23 @@ cp -p %{SOURCE7} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-cc.init
 cp -p %{SOURCE8} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-nc.init
 
 # Make a server root for apache
-mkdir -p $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/
-cp -p %{SOURCE9} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-cc.conf
-cp -p %{SOURCE10} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-nc.conf
-cp -p %{SOURCE11} $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-common.conf
-ln -s %{_libdir}/httpd/modules $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/modules
-rm $RPM_BUILD_ROOT/%{eucaconfdir}/httpd.conf
+mkdir -p $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/
+cp -p %{SOURCE9} $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-cc.conf
+cp -p %{SOURCE10} $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-nc.conf
+cp -p %{SOURCE11} $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-common.conf
+ln -s %{_libdir}/httpd/modules $RPM_BUILD_ROOT//etc/%{name}/httpd/modules
+rm $RPM_BUILD_ROOT//etc/%{name}/httpd.conf
 
-sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-nc.conf
-sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT/%{eucaconfdir}/httpd/conf/httpd-cc.conf
+sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-nc.conf
+sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-cc.conf
 
 # Create the directories where components store their data
-mkdir -p $RPM_BUILD_ROOT%{eucastatedir}
-touch $RPM_BUILD_ROOT%{eucastatedir}/services
+mkdir -p $RPM_BUILD_ROOT/var/lib/%{name}
+touch $RPM_BUILD_ROOT/var/lib/%{name}/services
 for dir in bukkits CC db keys ldap upgrade vmware volumes webapps; do
-    install -d -m 0700 $RPM_BUILD_ROOT%{eucastatedir}/$dir
+    install -d -m 0700 $RPM_BUILD_ROOT/var/lib/%{name}/$dir
 done
-install -d -m 0771 $RPM_BUILD_ROOT%{eucastatedir}/instances
+install -d -m 0771 $RPM_BUILD_ROOT/var/lib/%{name}/instances
 
 # Add PolicyKit config on systems that support it
 mkdir -p $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d
@@ -590,11 +613,11 @@ install -p -m 644 %{SOURCE5} \
 
 # Copy axis2.xml into /etc for now, and symlink it
 install -m 644 %{SOURCE6} \
-        $RPM_BUILD_ROOT%{eucaconfdir}/axis2.xml
+        $RPM_BUILD_ROOT/etc/%{name}/axis2.xml
 
 # add a mess of symlinks
-ln -s %{eucaconfdir}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/cc/
-ln -s %{eucaconfdir}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/nc/
+ln -s /etc/%{name}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/cc/
+ln -s /etc/%{name}/axis2.xml $RPM_BUILD_ROOT%{axis2c_services}/nc/
 ln -s %{_libdir}/wso2-axis2/modules $RPM_BUILD_ROOT%{axis2c_services}/cc/
 ln -s %{_libdir}/wso2-axis2/modules $RPM_BUILD_ROOT%{axis2c_services}/nc/
 ln -s %{_libdir} $RPM_BUILD_ROOT%{axis2c_services}/cc/lib
@@ -609,24 +632,28 @@ install -m 755 node/NCclient $RPM_BUILD_ROOT%{_bindir}
 install -m 755 cluster/CCclient_full $RPM_BUILD_ROOT%{_bindir}/CCclient
 
 # Fix some file permissions found by rpmlint
-chmod -x $RPM_BUILD_ROOT%{eucastatedir}/keys/nc-client-policy.xml
-chmod -x $RPM_BUILD_ROOT%{eucastatedir}/keys/cc-client-policy.xml
+chmod -x $RPM_BUILD_ROOT/var/lib/%{name}/keys/nc-client-policy.xml
+chmod -x $RPM_BUILD_ROOT/var/lib/%{name}/keys/cc-client-policy.xml
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/cc/services/EucalyptusCC/eucalyptus_cc.wsdl
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/cc/services/EucalyptusCC/services.xml
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/gl/services/EucalyptusGL/eucalyptus_gl.wsdl
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/gl/services/EucalyptusGL/services.xml
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/nc/services/EucalyptusNC/services.xml
-chmod +x $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
+
+# This file is no longer needed, and was not even ported from MySQL to PostGreSQL
+rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 
 %files
 %doc LICENSE INSTALL README CHANGELOG
-%attr(-,eucalyptus,eucalyptus) %{eucaconfdir}/eucalyptus.conf
-%{eucaconfdir}/eucalyptus-version
-%{eucaconfdir}/axis2.xml
-%dir %{eucaconfdir}/httpd
-%dir %{eucaconfdir}/httpd/conf
-%{eucaconfdir}/httpd/conf/httpd-common.conf
-%{eucaconfdir}/httpd/modules
+# Eucalyptus initialization fails if the eucalyptus user
+# cannot write this file.  
+%config(noreplace) %attr(-,eucalyptus,eucalyptus) /etc/%{name}/eucalyptus.conf
+/etc/%{name}/eucalyptus-version
+%config(noreplace) /etc/%{name}/axis2.xml
+%dir /etc/%{name}/httpd
+%dir /etc/%{name}/httpd/conf
+%config(noreplace) /etc/%{name}/httpd/conf/httpd-common.conf
+/etc/%{name}/httpd/modules
 %attr(-,root,eucalyptus) %dir %{eucalibexecdir}
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_mountwrap
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_rootwrap
@@ -644,38 +671,40 @@ chmod +x $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 %{helperdir}/floppy
 %{helperdir}/get_iscsitarget.pl
 %{helperdir}/populate_arp.pl
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/db
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/keys
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/upgrade
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/db
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/keys
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/upgrade
 # Can this file go into a single-component package?  What uses it?
-%{eucastatedir}/keys/cc-client-policy.xml
-%attr(-,eucalyptus,eucalyptus) %dir %{eucalogdir}
-%attr(-,eucalyptus,eucalyptus) %dir %{eucarundir}
+/var/lib/%{name}/keys/cc-client-policy.xml
+%attr(-,eucalyptus,eucalyptus) %dir /var/log/%{name}
+%attr(-,eucalyptus,eucalyptus) %dir /var/run/%{name}
 
 %files common-java
 %{_unitdir}/eucalyptus-cloud.service
 %{_sbindir}/eucalyptus-cloud.init
 # cloud.d contains random stuff used by every Java component.  Most of it
 # probably belongs in /usr/share, but moving it will be painful.
-%{eucaconfdir}/cloud.d/
+/etc/%{name}/cloud.d/
 %{_sbindir}/eucalyptus-cloud
 %{eucajavalibdir}/*jar*
-%ghost %{eucastatedir}/services
-%attr(-,eucalyptus,eucalyptus) %{eucastatedir}/webapps/
+%{_javadir}/%{name}/*jar*
+%{_libdir}/%{name}/eucalyptus-storagecontroller-%{version}.jar
+%ghost /var/lib/%{name}/services
+%attr(-,eucalyptus,eucalyptus) /var/lib/%{name}/webapps/
 
 %files cloud
-%{eucaconfdir}/cloud.d/init.d/01_pg_kernel_params
+/etc/%{name}/cloud.d/init.d/01_pg_kernel_params
 %{_sbindir}/euca-lictool
 %{eucadatadir}/lic_default
 %{eucadatadir}/lic_template
 
 %files walrus
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/bukkits
-%{eucaconfdir}/drbd.conf.example
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/bukkits
+/etc/%{name}/drbd.conf.example
 
 %files sc
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/volumes
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/volumes
 %{helperdir}/connect_iscsitarget_sc.pl
 %{helperdir}/disconnect_iscsitarget_sc.pl
 %{_libdir}/eucalyptus/liblvm2control.so
@@ -684,23 +713,23 @@ chmod +x $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 %{_unitdir}/eucalyptus-cc.service
 %{_sbindir}/eucalyptus-cc.init
 %{axis2c_services}/cc
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/CC
-%{eucaconfdir}/httpd/conf/httpd-cc.conf
-%{eucaconfdir}/vtunall.conf.template
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/CC
+%config(noreplace) /etc/%{name}/httpd/conf/httpd-cc.conf
+/etc/%{name}/vtunall.conf.template
 %{_libexecdir}/eucalyptus/shutdownCC
 %{helperdir}/dynserv.pl
 # Is this used?
-%{eucastatedir}/keys/nc-client-policy.xml
+/var/lib/%{name}/keys/nc-client-policy.xml
 
 %files nc
-%config(noreplace) %{eucaconfdir}/libvirt.xsl
-%dir %{eucaconfdir}/nc-hooks
-%{eucaconfdir}/nc-hooks/example.sh
+%config(noreplace) /etc/%{name}/libvirt.xsl
+%dir /etc/%{name}/nc-hooks
+/etc/%{name}/nc-hooks/example.sh
 %{_unitdir}/eucalyptus-nc.service
 %{_sbindir}/eucalyptus-nc.init
 %{axis2c_services}/nc
-%attr(-,eucalyptus,eucalyptus) %dir %{eucastatedir}/instances
-%{eucaconfdir}/httpd/conf/httpd-nc.conf
+%attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/instances
+%config(noreplace) /etc/%{name}/httpd/conf/httpd-nc.conf
 %{_sbindir}/euca_test_nc
 %{helperdir}/detach.pl
 %{helperdir}/gen_kvm_libvirt_xml
@@ -715,7 +744,7 @@ chmod +x $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 %{axis2c_services}/gl
 
 # NB: the vmware tools packaged here only work against Eucalyptus
-# Enterprise Edition, but the client and server may be different
+# Enterprise plugins, but the client and server may be different
 # systems, so it's reasonable to package these commands here.
 %files admin-tools
 %{_sbindir}/euca_conf
@@ -762,10 +791,10 @@ chmod +x $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 getent group eucalyptus >/dev/null || groupadd -r eucalyptus
 ## FIXME:  Make QA (and Eucalyptus proper?) work with /sbin/nologin as the shell [RT:2092]
 #getent passwd eucalyptus >/dev/null || \
-#    useradd -r -g eucalyptus -d /var/lib/eucalyptus -s /sbin/nologin \
+#    useradd -r -g eucalyptus -d /var/lib/%{name} -s /sbin/nologin \
 #    -c 'Eucalyptus' eucalyptus
 getent passwd eucalyptus >/dev/null || \
-    useradd -r -g eucalyptus -d %{eucastatedir} \
+    useradd -r -g eucalyptus -d /var/lib/%{name} \
     -c 'Eucalyptus' eucalyptus
 
 if [ "$1" = "2" ]; then
@@ -781,18 +810,18 @@ if [ "$1" = "2" ]; then
     fi
 
     # Back up important data as well as all of the previous installation's jars.
-    BACKUPDIR="%{eucastatedir}/upgrade/eucalyptus.backup.`date +%%s`"
+    BACKUPDIR="/var/lib/%{name}/upgrade/eucalyptus.backup.`date +%%s`"
     mkdir -p "$BACKUPDIR"
     EUCABACKUPS=""
-    for i in %{eucastatedir}/keys/ %{eucastatedir}/db/ %{eucastatedir}/services %{eucaconfidr}/eucalyptus.conf %{eucaconfdir}/eucalyptus-version %{eucajavalibdir} %{eucahelperdir}; do
+    for i in /var/lib/%{name}/keys/ /var/lib/%{name}/db/ /var/lib/%{name}/services %{eucaconfidr}/eucalyptus.conf /etc/%{name}/eucalyptus-version %{eucajavalibdir} %{eucahelperdir}; do
         if [ -e $i ]; then
             EUCABACKUPS="$EUCABACKUPS $i"
         fi
     done
 
-    OLD_EUCA_VERSION=`cat %{eucaconfdir}/eucalyptus-version`
-    echo "# This file was automatically generated by Eucalyptus packaging." > %{eucaconfdir}/.upgrade
-    echo "$OLD_EUCA_VERSION:$BACKUPDIR" >> %{eucaconfdir}/.upgrade
+    OLD_EUCA_VERSION=`cat /etc/%{name}/eucalyptus-version`
+    echo "# This file was automatically generated by Eucalyptus packaging." > /etc/%{name}/.upgrade
+    echo "$OLD_EUCA_VERSION:$BACKUPDIR" >> /etc/%{name}/.upgrade
 
     tar cf - $EUCABACKUPS 2>/dev/null | tar xf - -C "$BACKUPDIR" 2>/dev/null
 fi
@@ -801,15 +830,15 @@ exit 0
 %post
 udevadm control --reload-rules
 
-%{_sbindir}/euca_conf -d / --instances %{eucastatedir}/instances --hypervisor kvm --bridge br0
+%{_sbindir}/euca_conf -d / --instances /var/lib/%{name}/instances --hypervisor kvm --bridge br0
 
 if [ "$1" = "2" ]; then
-    if [ -f %{eucaconfdir}/.upgrade ]; then
+    if [ -f /etc/%{name}/.upgrade ]; then
         while IFS=: read -r a b; do
             OLD_EUCA_VERSION=$a
             OLD_EUCA_PATH=$b
-        done < $EUCALYPTUS/etc/eucalyptus/.upgrade
-        %{helperdir}/euca_upgrade --old $OLD_EUCA_PATH --new / --conf >%{eucalogdir}/upgrade-config.log 2>&1
+        done < $EUCALYPTUS/etc/%{name}/.upgrade
+        %{helperdir}/euca_upgrade --old $OLD_EUCA_PATH --new / --conf >/var/log/%{name}/upgrade-config.log 2>&1
     fi
 fi
 
@@ -817,12 +846,6 @@ exit 0
 
 %post common-java
 %{systemd_post} eucalyptus-cloud.service
-
-%post sc
-# XXX: this should be represented by systemd deps
-# The sc may need its own unit for this?
-chkconfig --add tgtd
-/sbin/service tgtd start
 
 %post cc
 %{systemd_post} eucalyptus-cc.service
@@ -856,6 +879,9 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Mon Aug 27 2012 Andy Grimm <agrimm@gmail.com> - 3.1.0-19
+- Package review fixes, round one
+
 * Fri Aug 24 2012 Andy Grimm <agrimm@gmail.com> - 3.1.0-18
 - Fix httpd configs
 - Fix image registration via pg-hibernate patch update

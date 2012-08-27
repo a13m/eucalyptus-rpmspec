@@ -1,0 +1,19 @@
+--- eucalyptus-3.1.0.orig/clc/modules/storage-controller/src/main/java/com/eucalyptus/storage/OverlayManager.java	2012-08-16 23:14:00.640939401 -0400
++++ eucalyptus-3.1.0/clc/modules/storage-controller/src/main/java/com/eucalyptus/storage/OverlayManager.java	2012-08-27 14:18:56.459491065 -0400
+@@ -91,6 +91,7 @@
+ import com.eucalyptus.configurable.ConfigurableProperty;
+ import com.eucalyptus.configurable.PropertyDirectory;
+ import com.eucalyptus.entities.EntityWrapper;
++import com.eucalyptus.system.BaseDirectory;
+ import com.eucalyptus.util.EucalyptusCloudException;
+ import com.eucalyptus.util.StorageProperties;
+ import com.eucalyptus.util.WalrusProperties;
+@@ -287,7 +288,7 @@
+ 		}
+ 		//The following should be executed only once during the entire lifetime of the VM.
+ 		if(!initialized) {
+-			System.loadLibrary("lvm2control");
++			System.load(BaseDirectory.JNI.toString() + "/liblvm2control.so");
+ 			registerSignals();
+ 			initialized = true;
+ 		}

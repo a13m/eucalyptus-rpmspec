@@ -57,7 +57,7 @@ diff -ur eucalyptus-3.1.0.old/clc/modules/bootstrap/src/main/native/eucalyptus-b
  #define EUCA_MAIN "com/eucalyptus/bootstrap/SystemBootstrapper"
  #define EUCA_RET_RELOAD 123
  #define java_load_bootstrapper euca_load_bootstrapper
-@@ -125,23 +123,25 @@
+@@ -125,23 +123,26 @@
      jvm_opt.optionString=strdup(temp); \
  } while(0)
  static char *jvm_default_opts[] = {
@@ -88,6 +88,7 @@ diff -ur eucalyptus-3.1.0.old/clc/modules/bootstrap/src/main/native/eucalyptus-b
 +	    "-Deuca.libexec.dir=" EUCALYPTUS_LIBEXEC_DIR,
 +	    "-Deuca.conf.dir=" EUCALYPTUS_CONF_DIR "/cloud.d",
 +	    "-Deuca.log.dir=" EUCALYPTUS_LOG_DIR,
++	    "-Deuca.jni.dir=" EUCALYPTUS_LIB_DIR,
  	    "-Djava.util.prefs.PreferencesFactory=com.eucalyptus.util.NoopPreferencesFactory",
  	    NULL,
  };
@@ -157,7 +158,7 @@ diff -ur eucalyptus-3.1.0.old/clc/modules/msgs/src/main/java/com/eucalyptus/syst
  public enum BaseDirectory {
 -  HOME( "euca.home" ), VAR( "euca.var.dir" ), CONF( "euca.conf.dir" ), LIB( "euca.lib.dir" ), LOG( "euca.log.dir" );
 +  HOME( "euca.home" ), VAR( "euca.var.dir" ), CONF( "euca.conf.dir" ), LIB( "euca.lib.dir" ), LOG( "euca.log.dir" ),
-+  RUN( "euca.run.dir" ), LIBEXEC( "euca.libexec.dir" ), STATE( "euca.state.dir" );
++  RUN( "euca.run.dir" ), LIBEXEC( "euca.libexec.dir" ), STATE( "euca.state.dir" ), JNI( "euca.jni.dir" );
    private static Logger LOGG = Logger.getLogger( BaseDirectory.class );
    
    private String        key;
