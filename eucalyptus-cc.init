@@ -209,7 +209,7 @@ do_fullclean() {
             pkill -9 -s $sids >/dev/null 2>&1
         fi
 
-	rm -f $EUCASTATEDIR/CC/*
+	rm -f $EUCARUNDIR/CC/*
 	rm -f /dev/shm/*eucalyptusCC*    
 }
 
