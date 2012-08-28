@@ -6,8 +6,8 @@ After=syslog.target network.target remote-fs.target nss-lookup.target libvirtd.s
 Type=forking
 PIDFile=/var/run/eucalyptus/eucalyptus-nc.pid
 # EnvironmentFile=/etc/sysconfig/eucalyptus
-ExecStart=/bin/sh -x /usr/sbin/eucalyptus-nc.init start
-ExecStop=/bin/sh -x /usr/sbin/eucalyptus-nc.init stop
+ExecStart=/usr/libexec/eucalyptus/eucalyptus-nc.init start
+ExecStop=/usr/libexec/eucalyptus/eucalyptus-nc.init stop
 PrivateTmp=true
 
 [Install]

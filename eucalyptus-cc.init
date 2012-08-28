@@ -107,6 +107,7 @@ EUCADATADIR=$EUCALYPTUS/usr/share/eucalyptus
 EUCARUNDIR=$EUCALYPTUS/var/run/eucalyptus
 EUCALOGDIR=$EUCALYPTUS/var/log/eucalyptus
 EUCALIBEXECDIR=$EUCALYPTUS/usr/libexec/eucalyptus/
+LIBDIR=@LIBDIR@
 
 # crude way to start the axis2c services
 do_start() {
@@ -166,53 +167,6 @@ do_status() {
 	return 1
 }
 
-# fully clean up all local CC state
-do_fullclean() {
-	pidfiles="`ls -1 $EUCARUNDIR/vtund*.pid 2>/dev/null`"
-        pids=""
-        sids=""
-        for pidfile in $pidfiles ; do
-            if [ -s $pidfile ]; then
-                pid=`cat $pidfile 2> /dev/null`
-                sids="$pid $sids"
-                morepids="$pid"
-                for i in `pgrep -P $pid`; do
-                    morepids="$morepids `echo $i`"
-                    morepids="$morepids `pgrep -P $i`"
-                done
-                pids="$pids $morepids"
-                rm -f $pidfile
-            fi
-        done
-        if [ -n "$pids" ]; then
-            kill -15 $pids >/dev/null 2>&1
-            pkill -15 -s $sids >/dev/null 2>&1
-        fi
-
-        dopkill=0
-        for pid in $pids ; do
-            timeout=5
-            while [ $timeout -gt 0 ]; do
-                if ps $pid > /dev/null 2>&1 ; then
-                    sleep 1
-                    timeout=$(($timeout - 1))
-                    dopkill=1
-                else
-                    break
-                fi
-            done
-            if [ $timeout -eq 0 ]; then
-                kill -9 ${pid} >/dev/null 2>&1
-            fi
-        done
-        if [ $dopkill -gt 0 ]; then
-            pkill -9 -s $sids >/dev/null 2>&1
-        fi
-
-	rm -f $EUCARUNDIR/CC/*
-	rm -f /dev/shm/*eucalyptusCC*    
-}
-
 do_stop() {
         pidfile="$EUCARUNDIR/eucalyptus-cc.pid"
 
@@ -265,9 +219,9 @@ do_stop() {
 }
 
 # set the library path correctly
-export LD_LIBRARY_PATH="/usr/lib64/wso2-axis2/modules/rampart"
-export AXIS2C_HOME=/usr/lib64/eucalyptus/axis2/cc
-export WSFCPP_HOME=/usr/lib64/eucalyptus/axis2/cc
+export LD_LIBRARY_PATH=$LIBDIR/wso2-axis2/modules/rampart
+export AXIS2C_HOME=$LIBDIR/eucalyptus/axis2/cc
+export WSFCPP_HOME=$LIBDIR/eucalyptus/axis2/cc
 
 case "$1" in
   start)
@@ -315,52 +269,6 @@ case "$1" in
 		;;
 	esac
 	;;
-  cleanstart)
-	if [ "$VERBOSE" != no ]; then
-		if [ "$WE_HAVE_LSB" = "Y" ]; then
-			log_daemon_msg "Starting $DESC" "$NAME"
-		else
-			echo -n "Starting $DESC: "
-		fi
-	fi
-	
-	# let's check there is no previous CC running
-	if do_status ; then
-		echo
-		echo "another CC is already running!"
-		if [ "$VERBOSE" != no ]; then
-			 if [ "$WE_HAVE_LSB" = "Y" ]; then
-				log_end_msg 1
-			fi
-		fi
-		exit 1
-	fi
-
-	# start and stop are hard: clear the semaphores
-	rm -f /dev/shm/*eucalyptusCC*
-	do_fullclean
-	do_start
-	case "$?" in
-	0|1) 
-		if [ "$VERBOSE" != no ]; then
-			if [ "$WE_HAVE_LSB" = "Y" ]; then
-				log_end_msg 0
-			else
-				echo "done."
-			fi
-		fi
-		;;
-	*)
-		if [ "$VERBOSE" != no ]; then
-			if [ "$WE_HAVE_LSB" = "Y" ]; then
-				log_end_msg 1
-			else
-				echo "failed!"
-			fi
-		fi
-		;;
-	esac
-	;;
   stop)
 	if [ "$VERBOSE" != no ]; then
        		if [ "$WE_HAVE_LSB" = "Y" ]; then
@@ -371,32 +279,6 @@ case "$1" in
         fi
 	# start and stop are hard: we loose the CC state
 	do_stop
-	rm -f /dev/shm/*eucalyptusCC*
-	if [ "$VERBOSE" != no ]; then
-		if [ "$WE_HAVE_LSB" = "Y" ]; then
-			log_end_msg 0
-		else
-			echo "done."
-		fi
-	fi
-	;;
-  cleanstop)
-	if [ "$VERBOSE" != no ]; then
-       		if [ "$WE_HAVE_LSB" = "Y" ]; then
-			log_begin_msg "Stopping $DESC"
-		else
-			echo -n "Stopping $DESC: "
-                fi
-        fi
-	# start and stop are hard: we lose the CC state
-	if ( test -f ${EUCALIBEXECDIR}/shutdownCC ); then
-	    ${EUCALIBEXECDIR}/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
-	else
-	    echo "WARNING: could not find $EUCALIBEXECDIR/shutdownCC, please check location of executable"
-	fi
-	
-	do_stop
-	do_fullclean
 	rm -f /dev/shm/*eucalyptusCC*
 	if [ "$VERBOSE" != no ]; then
 		if [ "$WE_HAVE_LSB" = "Y" ]; then
@@ -426,33 +308,6 @@ case "$1" in
 		fi
 	fi
   	;;
-  cleanrestart)
-	if [ "$VERBOSE" != no ]; then
-		if [ "$WE_HAVE_LSB" = "Y" ]; then
-			log_begin_msg "Restarting $DESC"
-		else
-			echo -n "Restarting $DESC: "
-		fi
-	fi
-
-	if ( test -f $EUCALIBEXECDIR/shutdownCC ); then
-	    $EUCALIBEXECDIR/shutdownCC localhost:$CC_PORT >/dev/null 2>&1
-	else
-	    echo "WARNING: could not find $EUCALIBEXECDIR/shutdownCC, please check location of executable"
-	fi
-
-	do_stop
-	do_fullclean
-	rm -f /dev/shm/*eucalyptusCC*
-	do_start
-	if [ "$VERBOSE" != no ]; then
-		if [ "$WE_HAVE_LSB" = "Y" ]; then
-			log_end_msg 0
-		else
-			echo "done."
-		fi
-	fi
-	;;
   status)
 	if do_status ; then
 		echo "CC is running"
@@ -462,7 +317,7 @@ case "$1" in
         ;;
 
   *)
-	echo "Usage: $NAME {start|stop|restart|cleanstart|cleanstop|cleanrestart}" >&2
+	echo "Usage: $NAME {start|stop|restart}" >&2
 	exit 3
 	;;
 esac

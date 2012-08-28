@@ -1140,7 +1140,7 @@ diff -ur eucalyptus-3.1.0.old/Makefile eucalyptus-3.1.0.good/Makefile
 -	@$(INSTALL) -m 0644 VERSION $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus-version
 +	@$(INSTALL) -d $(DESTDIR)$(eucaconfdir)/cloud.d
 +	@$(INSTALL) -d $(DESTDIR)$(eucaconfdir)/nc-hooks
-+	@$(INSTALL) -m 0644 VERSION $(DESTDIR)$(eucaconfdir)/eucalyptus-version
++	@$(INSTALL) -m 0644 VERSION $(DESTDIR)$(eucadatadir)/eucalyptus-version
  	@$(INSTALL) -d $(DESTDIR)$(etcdir)/init.d
 -	@$(INSTALL) -d $(DESTDIR)$(vardir)/run/eucalyptus/net
 -	@$(INSTALL) -d $(DESTDIR)$(vardir)/lib/eucalyptus/keys
@@ -1164,7 +1164,7 @@ diff -ur eucalyptus-3.1.0.old/Makefile eucalyptus-3.1.0.good/Makefile
  
  uninstall:
 -	@$(RM) -f $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus-version
-+	@$(RM) -f $(DESTDIR)$(eucaconfdir)/eucalyptus-version
++	@$(RM) -f $(DESTDIR)$(eucadatadir)/eucalyptus-version
  	@for subdir in $(SUBDIRS); do \
  		(cd $$subdir && $(MAKE) $@) || exit $$? ; done
  
@@ -1249,7 +1249,7 @@ diff -ur eucalyptus-3.1.0.old/net/vnetwork.c eucalyptus-3.1.0.good/net/vnetwork.
  	  newl = strchr(pass, '\n');
  	  if (newl) *newl = '\0';
 -	  snprintf(file, MAX_PATH, "%s/etc/eucalyptus/vtunall.conf.template", vnetconfig->eucahome);
-+	  snprintf(file, MAX_PATH, EUCALYPTUS_CONF_DIR "/vtunall.conf.template", vnetconfig->eucahome);
++	  snprintf(file, MAX_PATH, EUCALYPTUS_DATA_DIR "/vtunall.conf.template", vnetconfig->eucahome);
  	  template = file2str(file);
  	  if (template) {
  	    replace_string(&template, "VPASS", pass);
@@ -2062,7 +2062,7 @@ diff -ur eucalyptus-3.1.0.old/tools/Makefile eucalyptus-3.1.0.good/tools/Makefil
 +	@if test -e $(DESTDIR)$(eucaconfdir)/eucalyptus.conf ; then \
 +		cp $(DESTDIR)$(eucaconfdir)/eucalyptus.conf $(DESTDIR)$(eucaconfdir)/eucalyptus.conf.old ; fi
 +	@$(INSTALL) -m 644 eucalyptus.conf $(DESTDIR)$(eucaconfdir)
-+	@$(INSTALL) -m 644 vtunall.conf.template $(DESTDIR)$(eucaconfdir)
++	@$(INSTALL) -m 644 vtunall.conf.template $(DESTDIR)$(eucadatadir)
 +	@$(INSTALL) -d 755 $(DESTDIR)$(eucahelperdir)
 +	@for x in add_key.pl gen_libvirt_xml gen_kvm_libvirt_xml detach.pl partition2disk \
 +	        get_xen_info get_sys_info euca_ipt euca_upgrade populate_arp.pl \
@@ -2122,7 +2122,7 @@ diff -ur eucalyptus-3.1.0.old/tools/Makefile eucalyptus-3.1.0.good/tools/Makefil
 +	    do @$(RM) -f $(DESTDIR)$(initddir)/$$x; done
 +	@$(RM) -f $(DESTDIR)$(eucaconfdir)/httpd*
 +	@$(RM) -f $(DESTDIR)$(eucaconfdir)/eucalyptus.conf
-+	@$(RM) -f $(DESTDIR)$(eucaconfdir)/vtunall.conf.template
++	@$(RM) -f $(DESTDIR)$(eucadatadir)/vtunall.conf.template
 +# XXX: Need root privs
  	@$(RM) -f $(DESTDIR)$(etcdir)/bash_completion.d/euca_conf
 -	@$(RM) -f $(DESTDIR)$(sbindir)/euca_sync_key

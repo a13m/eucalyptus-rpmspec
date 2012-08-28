@@ -7,8 +7,8 @@ Wants=tgtd.service
 Type=forking
 PIDFile=/var/run/eucalyptus/eucalyptus-cloud.pid
 EnvironmentFile=/etc/sysconfig/eucalyptus
-ExecStart=/bin/sh -x /usr/sbin/eucalyptus-cloud.init start
-ExecStop=/bin/sh -x /usr/sbin/eucalyptus-cloud.init stop
+ExecStart=/usr/libexec/eucalyptus/eucalyptus-cloud.init start
+ExecStop=/usr/libexec/eucalyptus/eucalyptus-cloud.init stop
 PrivateTmp=true
 
 [Install]

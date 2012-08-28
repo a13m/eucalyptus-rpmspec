@@ -1,0 +1,11 @@
+--- eucalyptus-3.1.0.orig/tools/euca_conf.in	2012-06-19 14:41:48.000000000 -0400
++++ eucalyptus-3.1.0/tools/euca_conf.in	2012-08-27 16:39:21.337567567 -0400
+@@ -750,6 +750,8 @@
+ 
+ 	if [ -e $EUCALYPTUS/etc/eucalyptus/eucalyptus-version ]; then
+ 		VERSION="$EUCALYPTUS/etc/eucalyptus/eucalyptus-version"
++	elif [ -e /usr/share/eucalyptus/eucalyptus-version ]; then
++		VERSION="/usr/share/eucalyptus/eucalyptus-version"
+ 	elif [ -e @prefix@/etc/eucalyptus/eucalyptus-version ]; then
+ 		VERSION="@prefix@/etc/eucalyptus/eucalyptus-version"
+ 	fi

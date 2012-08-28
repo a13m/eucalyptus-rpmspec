@@ -110,6 +110,7 @@ EUCACONFDIR=$EUCALYPTUS/etc/eucalyptus
 EUCADATADIR=$EUCALYPTUS/usr/share/eucalyptus
 EUCARUNDIR=$EUCALYPTUS/var/run/eucalyptus
 EUCALOGDIR=$EUCALYPTUS/var/log/eucalyptus
+LIBDIR=@LIBDIR@
 
 # crude way to start the axis2c services
 do_start() {
@@ -268,9 +269,9 @@ do_stop() {
 }
 
 # set the library path correctly
-export LD_LIBRARY_PATH="/usr/lib64/wso2-axis2/modules/rampart"
-export AXIS2C_HOME="/usr/lib64/eucalyptus/axis2/nc"
-export WSFCPP_HOME="/usr/lib64/eucalyptus/axis2/nc"
+export LD_LIBRARY_PATH=$LIBDIR/wso2-axis2/modules/rampart
+export AXIS2C_HOME=$LIBDIR/eucalyptus/axis2/nc
+export WSFCPP_HOME=$LIBDIR/eucalyptus/axis2/nc
 
 case "$1" in
   start)

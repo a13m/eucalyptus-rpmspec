@@ -129,6 +129,9 @@ Source11:      httpd-common.conf
 # built into a subpackage. 
 Source12:      eucalyptus-3.1.0-generated.tgz
 
+# Add a separate "clean" script for the CC
+Source13:      eucalyptus-clean-cc
+
 # https://eucalyptus.atlassian.net/browse/EUCA-2364
 Patch0:        eucalyptus-jdk7.patch
 # https://eucalyptus.atlassian.net/browse/EUCA-3253
@@ -175,6 +178,9 @@ Patch18:       eucalyptus-jni-abspath.patch
 
 # Replace a non-ascii apostrophe with an ascii one.
 Patch19:       eucalyptus-fix-non-ascii.patch
+
+# Move version file out of /etc
+Patch20:       eucalyptus-move-version-file.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -306,8 +312,6 @@ alongside the cluster controller.
 Summary:      Elastic Utility Computing Architecture - cloud controller
 Requires:     %{name}                     = %{version}-%{release}
 Requires:     %{name}-common-java%{?_isa} = %{version}-%{release}
-# bc is needed for /etc/%{name}/cloud.d/init.d/01_pg_kernel_params
-Requires:     bc
 Requires:     euca2ools >= 2.0
 Requires:     lvm2
 Requires:     perl(Getopt::Long)
@@ -467,6 +471,7 @@ popd
 %patch17 -p1
 %patch18 -p1
 %patch19 -p1
+%patch20 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -494,7 +499,7 @@ popd
 %build
 export CFLAGS="%{optflags}"
 
-# TODO: we should use %%configure now
+# TODO: we should use %%configure now, except that "prefix" is still broken
 # Also, helperdir sould be a config option, unless we decide that
 # it's always eucadatadir
 ./configure --with-axis2=%{_datadir}/axis2-* \
@@ -541,7 +546,7 @@ rm $RPM_BUILD_ROOT%{eucajavalibdir}/junit4*
 
 # Fix jar paths and replace them with symlinks
 mkdir -p $RPM_BUILD_ROOT%{_javadir}/%{name}
-for x in $RPM_BUILD_ROOT%{eucajavalibdir}/eucalyptus-*; do
+for x in $RPM_BUILD_ROOT%{eucajavalibdir}/eucalyptus-*.jar; do
   if [ $( basename $x ) == "eucalyptus-storagecontroller-%{version}.jar" ]; then
     DESTFILE=%{_libdir}/%{name}/$( basename $x )
   else
@@ -574,21 +579,26 @@ sed -i -e 's#.*EUCALYPTUS=.*#EUCALYPTUS="/"#' \
        $RPM_BUILD_ROOT/etc/%{name}/eucalyptus.conf
 
 # Move init scripts into sbindir and call them from systemd
-mv $RPM_BUILD_ROOT/etc/init.d/eucalyptus-cloud $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-cloud.init
+mv $RPM_BUILD_ROOT/etc/init.d/eucalyptus-cloud \
+   $RPM_BUILD_ROOT/%{_libexecdir}/%{name}/eucalyptus-cloud.init
 rm -rf $RPM_BUILD_ROOT/etc/init.d
-cp -p %{SOURCE7} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-cc.init
-cp -p %{SOURCE8} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-nc.init
+cp -p %{SOURCE7} $RPM_BUILD_ROOT/%{_libexecdir}/%{name}/eucalyptus-cc.init
+cp -p %{SOURCE8} $RPM_BUILD_ROOT/%{_libexecdir}/%{name}/eucalyptus-nc.init
+sed -i -e "s#@LIBDIR@#%{_libdir}#" $RPM_BUILD_ROOT/%{_libexecdir}/%{name}/eucalyptus-cc.init
+sed -i -e "s#@LIBDIR@#%{_libdir}#" $RPM_BUILD_ROOT/%{_libexecdir}/%{name}/eucalyptus-nc.init
+
+cp -p %{SOURCE13} $RPM_BUILD_ROOT/%{_sbindir}/eucalyptus-clean-cc
 
 # Make a server root for apache
-mkdir -p $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/
-cp -p %{SOURCE9} $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-cc.conf
-cp -p %{SOURCE10} $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-nc.conf
-cp -p %{SOURCE11} $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-common.conf
-ln -s %{_libdir}/httpd/modules $RPM_BUILD_ROOT//etc/%{name}/httpd/modules
-rm $RPM_BUILD_ROOT//etc/%{name}/httpd.conf
+mkdir -p $RPM_BUILD_ROOT/etc/%{name}/httpd/conf/
+cp -p %{SOURCE9} $RPM_BUILD_ROOT/etc/%{name}/httpd/conf/httpd-cc.conf
+cp -p %{SOURCE10} $RPM_BUILD_ROOT/etc/%{name}/httpd/conf/httpd-nc.conf
+cp -p %{SOURCE11} $RPM_BUILD_ROOT/etc/%{name}/httpd/conf/httpd-common.conf
+ln -s %{_libdir}/httpd/modules $RPM_BUILD_ROOT/etc/%{name}/httpd/modules
+rm $RPM_BUILD_ROOT/etc/%{name}/httpd.conf
 
-sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-nc.conf
-sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT//etc/%{name}/httpd/conf/httpd-cc.conf
+sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT/etc/%{name}/httpd/conf/httpd-nc.conf
+sed -i -e "s#@EUCAAXIS2HOME@#%{axis2c_services}#" $RPM_BUILD_ROOT/etc/%{name}/httpd/conf/httpd-cc.conf
 
 # Create the directories where components store their data
 mkdir -p $RPM_BUILD_ROOT/var/lib/%{name}
@@ -643,12 +653,32 @@ chmod -x $RPM_BUILD_ROOT%{axis2c_services}/nc/services/EucalyptusNC/services.xml
 # This file is no longer needed, and was not even ported from MySQL to PostGreSQL
 rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 
+# This is not the ideal way to set kernel parameters.  We'll deal with this
+# via documentation for now.
+rm $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/cloud.d/init.d/01_pg_kernel_params
+
+# Move cloud.d directories which aren't config files.  We need symlinks
+# for now, though.
+mv $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/cloud.d/scripts \
+   $RPM_BUILD_ROOT%{_libexecdir}/%{name}/scripts
+mv $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/cloud.d/upgrade \
+   $RPM_BUILD_ROOT%{_libexecdir}/%{name}/upgrade
+ln -s %{_libexecdir}/%{name}/scripts \
+   $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/cloud.d/
+ln -s %{_libexecdir}/%{name}/upgrade \
+   $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/cloud.d/
+
+# doc fixups
+mv $RPM_BUILD_ROOT%{_docdir}/%{name} $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}
+mv $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/drbd.conf.example \
+   $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}/
+
 %files
 %doc LICENSE INSTALL README CHANGELOG
 # Eucalyptus initialization fails if the eucalyptus user
 # cannot write this file.  
 %config(noreplace) %attr(-,eucalyptus,eucalyptus) /etc/%{name}/eucalyptus.conf
-/etc/%{name}/eucalyptus-version
+%{_datadir}/%{name}/eucalyptus-version
 %config(noreplace) /etc/%{name}/axis2.xml
 %dir /etc/%{name}/httpd
 %dir /etc/%{name}/httpd/conf
@@ -665,7 +695,6 @@ rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 %{helperdir}/connect_iscsitarget.pl
 %{helperdir}/create-loop-devices
 %{helperdir}/disconnect_iscsitarget.pl
-%doc %{_docdir}/eucalyptus
 %{helperdir}/euca_ipt
 %{helperdir}/euca_upgrade
 %{helperdir}/floppy
@@ -682,10 +711,12 @@ rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 
 %files common-java
 %{_unitdir}/eucalyptus-cloud.service
-%{_sbindir}/eucalyptus-cloud.init
+%{_libexecdir}/%{name}/eucalyptus-cloud.init
 # cloud.d contains random stuff used by every Java component.  Most of it
 # probably belongs in /usr/share, but moving it will be painful.
-/etc/%{name}/cloud.d/
+%{_sysconfdir}/%{name}/cloud.d/
+%{_libexecdir}/%{name}/scripts/
+%{_libexecdir}/%{name}/upgrade/
 %{_sbindir}/eucalyptus-cloud
 %{eucajavalibdir}/*jar*
 %{_javadir}/%{name}/*jar*
@@ -694,14 +725,13 @@ rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 %attr(-,eucalyptus,eucalyptus) /var/lib/%{name}/webapps/
 
 %files cloud
-/etc/%{name}/cloud.d/init.d/01_pg_kernel_params
 %{_sbindir}/euca-lictool
 %{eucadatadir}/lic_default
 %{eucadatadir}/lic_template
 
 %files walrus
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/bukkits
-/etc/%{name}/drbd.conf.example
+%doc %{_docdir}/%{name}-%{version}/drbd.conf.example
 
 %files sc
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/volumes
@@ -711,12 +741,13 @@ rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 
 %files cc
 %{_unitdir}/eucalyptus-cc.service
-%{_sbindir}/eucalyptus-cc.init
+%{_libexecdir}/%{name}/eucalyptus-cc.init
 %{axis2c_services}/cc
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/CC
 %config(noreplace) /etc/%{name}/httpd/conf/httpd-cc.conf
-/etc/%{name}/vtunall.conf.template
+%{_datadir}/%{name}/vtunall.conf.template
 %{_libexecdir}/eucalyptus/shutdownCC
+%{_sbindir}/eucalyptus-clean-cc
 %{helperdir}/dynserv.pl
 # Is this used?
 /var/lib/%{name}/keys/nc-client-policy.xml
@@ -726,7 +757,7 @@ rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 %dir /etc/%{name}/nc-hooks
 /etc/%{name}/nc-hooks/example.sh
 %{_unitdir}/eucalyptus-nc.service
-%{_sbindir}/eucalyptus-nc.init
+%{_libexecdir}/%{name}/eucalyptus-nc.init
 %{axis2c_services}/nc
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/instances
 %config(noreplace) /etc/%{name}/httpd/conf/httpd-nc.conf
@@ -739,6 +770,7 @@ rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
 %{helperdir}/get_xen_info
 %{helperdir}/partition2disk
 /var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
+%{_docdir}/%{name}-%{version}/libvirt*
 
 %files gl
 %{axis2c_services}/gl

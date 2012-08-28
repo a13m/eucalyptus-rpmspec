@@ -6,8 +6,8 @@ After=syslog.target network.target remote-fs.target nss-lookup.target
 Type=forking
 PIDFile=/var/run/eucalyptus/eucalyptus-cc.pid
 # EnvironmentFile=/etc/sysconfig/eucalyptus
-ExecStart=/bin/sh -x /usr/sbin/eucalyptus-cc.init start
-ExecStop=/bin/sh -x /usr/sbin/eucalyptus-cc.init stop
+ExecStart=/usr/libexec/eucalyptus/eucalyptus-cc.init start
+ExecStop=/usr/libexec/eucalyptus/eucalyptus-cc.init stop
 PrivateTmp=true
 
 [Install]
