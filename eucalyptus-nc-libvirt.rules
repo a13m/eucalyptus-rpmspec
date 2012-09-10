@@ -1,0 +1,11 @@
+polkit.addRule(function(action, subject) {
+   if (action.id == "org.libvirt.unix.manage" &&
+       subject.user == "eucalyptus") {
+       polkit.log("action=" + action.id);
+       polkit.log("subject=" + subject);
+       polkit.log("Returning " + polkit.Result.YES);
+       return polkit.Result.YES;
+   }
+   polkit.log("Returning " + polkit.Result.NOT_HANDLED + " for user " + subject.user);
+   return polkit.Result.NOT_HANDLED;
+});

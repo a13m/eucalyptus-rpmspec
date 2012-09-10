@@ -10,7 +10,7 @@
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.0
-Release:       19%{?dist}
+Release:       20%{?dist}
 License:       GPLv3 and (GPLv3 and ASL 2.0) and (GPLv3 and BSD)
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -132,6 +132,9 @@ Source12:      eucalyptus-3.1.0-generated.tgz
 # Add a separate "clean" script for the CC
 Source13:      eucalyptus-clean-cc
 
+# Add a new-style polkit rule
+Source14:      eucalyptus-nc-libvirt.rules
+
 # https://eucalyptus.atlassian.net/browse/EUCA-2364
 Patch0:        eucalyptus-jdk7.patch
 # https://eucalyptus.atlassian.net/browse/EUCA-3253
@@ -181,6 +184,10 @@ Patch19:       eucalyptus-fix-non-ascii.patch
 
 # Move version file out of /etc
 Patch20:       eucalyptus-move-version-file.patch
+
+# Ignore missing grub-install.
+# http://eucalyptus.atlassian.net/browse/EUCA-3470
+Patch21:       eucalyptus-ignore-missing-grub-install.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -248,6 +255,7 @@ Requires:     postgresql-jdbc
 Requires:     proxool
 Requires:     springframework-context-support
 Requires:     springframework-web
+Requires:     stax-utils
 Requires:     tomcat-servlet-3.0-api
 Requires:     velocity
 Requires:     woodstox-core
@@ -344,6 +352,12 @@ Requires:     vtun
 Requires:     dhcp
 Requires:     httpd
 Requires:     %{_sbindir}/euca_conf
+Requires:     mod_wso2-axis2
+# XXX: I wish this were not "devel", but some modules are being
+# loaded without a version
+Requires:     wso2-axis2-devel
+Requires:     wso2-axis2-modules
+Requires:     %{_sbindir}/euca_conf
 Requires(preun): systemd-units
 Requires(postun): systemd-units
 Requires(post): systemd-units
@@ -376,6 +390,11 @@ Requires:     httpd
 Requires:     kvm
 Requires:     iscsi-initiator-utils
 Requires:     libvirt
+Requires:     mod_wso2-axis2
+# XXX: I wish this were not "devel", but some modules are being
+# loaded without a version
+Requires:     wso2-axis2-devel
+Requires:     wso2-axis2-modules
 Requires:     %{_sbindir}/euca_conf
 Requires(preun): systemd-units
 Requires(postun): systemd-units
@@ -472,6 +491,7 @@ popd
 %patch18 -p1
 %patch19 -p1
 %patch20 -p1
+%patch21 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -557,11 +577,18 @@ for x in $RPM_BUILD_ROOT%{eucajavalibdir}/eucalyptus-*.jar; do
 done
 
 # Link jars not needed at build time
-ln -s /usr/share/java/mule/mule-module-management.jar $RPM_BUILD_ROOT%{eucajavalibdir}
-ln -s /usr/share/java/postgresql-jdbc.jar $RPM_BUILD_ROOT%{eucajavalibdir}
-ln -s /usr/share/java/avalon-framework-impl.jar $RPM_BUILD_ROOT%{eucajavalibdir}
-ln -s /usr/share/java/avalon-logkit.jar $RPM_BUILD_ROOT%{eucajavalibdir}
-ln -s /usr/share/java/proxool.jar $RPM_BUILD_ROOT%{eucajavalibdir}
+for jar in mule/mule-module-management \
+           postgresql-jdbc \
+           avalon-framework-impl \
+           avalon-logkit \
+           proxool \
+           mx4j/mx4j-impl \
+           mx4j/mx4j \
+           mx4j/mx4j-jmx \
+           mx4j/mx4j-remote \
+           mx4j/mx4j-tools; do
+  ln -s /usr/share/java/${jar}.jar $RPM_BUILD_ROOT%{eucajavalibdir}
+done
 
 pushd clc/eucadmin/man
 mkdir -p $RPM_BUILD_ROOT/%{_mandir}/man1
@@ -609,8 +636,8 @@ done
 install -d -m 0771 $RPM_BUILD_ROOT/var/lib/%{name}/instances
 
 # Add PolicyKit config on systems that support it
-mkdir -p $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d
-cp -p tools/eucalyptus-nc-libvirt.pkla $RPM_BUILD_ROOT/var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
+mkdir -p $RPM_BUILD_ROOT/usr/share/polkit-1/rules.d/
+cp -p %{SOURCE14} $RPM_BUILD_ROOT/usr/share/polkit-1/rules.d/eucalyptus-nc-libvirt.rules
 
 # Install systemd service files
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
@@ -769,7 +796,7 @@ mv $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/drbd.conf.example \
 %{helperdir}/get_sys_info
 %{helperdir}/get_xen_info
 %{helperdir}/partition2disk
-/var/lib/polkit-1/localauthority/10-vendor.d/eucalyptus-nc-libvirt.pkla
+/usr/share/polkit-1/rules.d/eucalyptus-nc-libvirt.rules
 %{_docdir}/%{name}-%{version}/libvirt*
 
 %files gl
@@ -911,6 +938,11 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Fri Sep  7 2012 Andy Grimm <agrimm@gmail.com> - 3.1.0-20
+- Create a new polkit rule
+- Add a patch to ignore missing grub-install
+- Add some missing Requires
+
 * Mon Aug 27 2012 Andy Grimm <agrimm@gmail.com> - 3.1.0-19
 - Package review fixes, round one
 

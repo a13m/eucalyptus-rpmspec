@@ -6,7 +6,6 @@ Wants=tgtd.service
 [Service]
 Type=forking
 PIDFile=/var/run/eucalyptus/eucalyptus-cloud.pid
-EnvironmentFile=/etc/sysconfig/eucalyptus
 ExecStart=/usr/libexec/eucalyptus/eucalyptus-cloud.init start
 ExecStop=/usr/libexec/eucalyptus/eucalyptus-cloud.init stop
 PrivateTmp=true
