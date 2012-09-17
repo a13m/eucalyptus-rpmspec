@@ -4,13 +4,15 @@
 %global eucadatadir       %{_datadir}/%{name}
 %global eucajavalibdir    %{_datadir}/%{name}
 %global helperdir         %{_datadir}/%{name}
+%global gittag            b8c109b4
+%global with_axis2v14     0
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
-Version:       3.1.0
-Release:       20%{?dist}
+Version:       3.1.2
+Release:       0.2.20120917git%{gittag}%{?dist}
 License:       GPLv3 and (GPLv3 and ASL 2.0) and (GPLv3 and BSD)
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -51,7 +53,7 @@ BuildRequires: dnsjava
 BuildRequires: ezmorph
 BuildRequires: geronimo-jta
 BuildRequires: groovy
-BuildRequires: guava >= 12
+BuildRequires: guava >= 9
 BuildRequires: ha-jdbc
 BuildRequires: hamcrest12
 BuildRequires: hibernate3
@@ -89,6 +91,10 @@ BuildRequires: xml-security
 # Should be a json-lib Requires
 BuildRequires: xom
 
+%if %with_axis2v14
+BuildRequires: axis2v14
+%endif
+
 Requires:      vconfig
 Requires:      wget
 Requires:      rsync
@@ -101,7 +107,8 @@ Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
 Requires(post): %{_sbindir}/euca_conf
 
-Source0:       http://downloads.eucalyptus.com/software/eucalyptus/3.1/source/eucalyptus-3.1.0.tar.gz
+# Source0:       http://downloads.eucalyptus.com/software/eucalyptus/3.1/source/eucalyptus-3.1.0.tar.gz
+Source0:       eucalyptus-%{version}git%{gittag}.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
 Source1:       euca-WSDL2C.sh
 Source2:       eucalyptus-jarlinks.txt
@@ -124,10 +131,19 @@ Source10:      httpd-nc.conf
 Source11:      httpd-common.conf
 
 # Axis2/Java code generation is broken with v1.6
-# This code was generated using 1.4; note that 1.5 should also work, and 
-# the 1.5 source is included in wso2-wsf-cpp package, but not currently
-# built into a subpackage. 
-Source12:      eucalyptus-3.1.0-generated.tgz
+# To regenerate this code:
+# 1) yum install http://arg.fedorapeople.org/axis2v14/noarch/axis2v14-1.4.1-1.fc18.noarch.rpm
+# 2) Set with_axis2v14 to 1
+# 3) fedpkg prep
+# 4) pushd eucalyptus-<version>git<tag>
+# 5) run configure from this spec (use rpmspec to fill in macros)
+# 6) for x in gatherlog cluster node; do pushd $x; make generated/stubs; popd; done
+# 7) popd
+# 8) tar czf eucalyptus-<version>git<tag>-generated.tgz \
+#            eucalyptus-<version>git<tag>/{node,cluster,gatherlog}/generated
+%if !%with_axis2v14
+Source12:      eucalyptus-%{version}git%{gittag}-generated.tgz
+%endif
 
 # Add a separate "clean" script for the CC
 Source13:      eucalyptus-clean-cc
@@ -143,25 +159,15 @@ Patch2:        eucalyptus-jetty8.patch
 Patch3:        eucalyptus-no-reporting.patch
 # https://eucalyptus.atlassian.net/browse/EUCA-2993
 Patch4:        eucalyptus-groovy18.patch
-# https://eucalyptus.atlassian.net/browse/EUCA-2997
-Patch5:        eucalyptus-guava-11.patch
-Patch6:        eucalyptus-guava-13.patch
-# This patch is required if we used Axis2/Java 1.6 for code generation.
-# Patch7:        eucalyptus-axis2-java-1.6.patch
-# Minor log4j interface change
-Patch8:        eucalyptus-log4j-fix.patch
 
 # Three separate patches to disable gwt
 Patch9:        eucalyptus-disable-gwt.patch
 Patch10:        eucalyptus-disable-gwt-in-buildxml.patch
 Patch11:        eucalyptus-disable-gwt-in-makefile.patch
 
-# https://eucalyptus.atlassian.net/browse/EUCA-2998
-Patch12:       eucalyptus-pg-hibernate.patch
-
-# Kill all hardcoded paths
-# https://eucalyptus.atlassian.net/browse/EUCA-3331
-Patch13:       eucalyptus-macro-fix.patch
+# Make install paths configurable
+# https://eucalyptus.atlassian.net/browse/EUCA-3531
+Patch13:       eucalyptus-configurable-paths.patch
 
 # Make one repo per service of Axis2 services
 Patch14:       eucalyptus-axis2-services.patch
@@ -172,22 +178,11 @@ Patch15:       eucalyptus-rootwrap-python.patch
 # Fix include location for axis2 libs
 Patch16:       eucalyptus-wso2-axis2-configure.patch
 
-# Fix postgres config and improve logging for pg startup
-# Related: https://eucalyptus.atlassian.net/browse/EUCA-3334
-Patch17:       eucalyptus-fix-setupdb.patch
-
 # Use System.load with an absolute path for JNI lib load
 Patch18:       eucalyptus-jni-abspath.patch
 
-# Replace a non-ascii apostrophe with an ascii one.
-Patch19:       eucalyptus-fix-non-ascii.patch
-
 # Move version file out of /etc
 Patch20:       eucalyptus-move-version-file.patch
-
-# Ignore missing grub-install.
-# http://eucalyptus.atlassian.net/browse/EUCA-3470
-Patch21:       eucalyptus-ignore-missing-grub-install.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -224,7 +219,7 @@ Requires:     ezmorph
 Requires:     geronimo-jms
 Requires:     geronimo-jta
 Requires:     groovy
-Requires:     guava
+Requires:     guava >= 9
 Requires:     ha-jdbc
 Requires:     hamcrest12
 Requires:     hibernate3
@@ -266,6 +261,8 @@ Requires:     xml-commons-apis
 Requires:     xml-security
 Requires:     xom
 Requires:     %{_sbindir}/euca_conf
+Requires(preun): systemd-units
+Requires(post): systemd-units
 
 %description common-java
 Eucalyptus is a service overlay that implements elastic computing
@@ -281,9 +278,6 @@ Requires:     %{name}             = %{version}-%{release}
 Requires:     %{name}-common-java = %{version}-%{release}
 Requires:     drbd-utils
 Requires:     lvm2
-Requires(preun): systemd-units
-Requires(postun): systemd-units
-Requires(post): systemd-units
 
 %description walrus
 Eucalyptus is a service overlay that implements elastic computing
@@ -302,9 +296,6 @@ Requires:     %{name}-common-java = %{version}-%{release}
 Requires:     lvm2
 Requires:     iscsi-initiator-utils
 Requires:     scsi-target-utils
-Requires(preun): systemd-units
-Requires(postun): systemd-units
-Requires(post): systemd-units
 
 %description sc
 Eucalyptus is a service overlay that implements elastic computing
@@ -325,9 +316,6 @@ Requires:     lvm2
 Requires:     perl(Getopt::Long)
 Requires:     postgresql
 Requires:     postgresql-server
-Requires(preun): systemd-units
-Requires(postun): systemd-units
-Requires(post): systemd-units
 
 # For reporting web UI
 # Requires:     dejavu-serif-fonts
@@ -359,7 +347,6 @@ Requires:     wso2-axis2-devel
 Requires:     wso2-axis2-modules
 Requires:     %{_sbindir}/euca_conf
 Requires(preun): systemd-units
-Requires(postun): systemd-units
 Requires(post): systemd-units
 
 %description cc
@@ -397,7 +384,6 @@ Requires:     wso2-axis2-devel
 Requires:     wso2-axis2-modules
 Requires:     %{_sbindir}/euca_conf
 Requires(preun): systemd-units
-Requires(postun): systemd-units
 Requires(post): systemd-units
 
 %description nc
@@ -467,31 +453,24 @@ This package contains three debugging programs for testing Eucalyptus
 components which run as Axis2/C webservices.
 
 %prep
-%setup -q
-pushd ..
-tar xzf %{SOURCE12}
-popd
+%setup -q -n %{name}-%{version}git%{gittag}
+%if !%with_axis2v14
+tar --strip-components=1 -xvzf %{SOURCE12}
+touch gatherlog/generated/stubs cluster/generated/stubs node/generated/stubs
+%endif
 %patch0 -p1
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
-%patch5 -p1
-%patch6 -p1
-# %patch7 -p1
-%patch8 -p1
 %patch9 -p1
 %patch10 -p1
 %patch11 -p1
-%patch12 -p1
 %patch13 -p1
 %patch14 -p1
 %patch15 -p1
 %patch16 -p1
-%patch17 -p1
 %patch18 -p1
-%patch19 -p1
 %patch20 -p1
-%patch21 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -525,7 +504,7 @@ export CFLAGS="%{optflags}"
 ./configure --with-axis2=%{_datadir}/axis2-* \
             --with-axis2c=%{axis2c_home} \
             --with-axis2c-services=%{axis2c_services} \
-            --with-wsdl2c-sh=%{S:1} \
+            --with-wsdl2c-sh=%{SOURCE1} \
             --enable-debug \
             --prefix=/ \
             --sbindir=%{_sbindir} \
@@ -856,52 +835,10 @@ getent passwd eucalyptus >/dev/null || \
     useradd -r -g eucalyptus -d /var/lib/%{name} \
     -c 'Eucalyptus' eucalyptus
 
-if [ "$1" = "2" ]; then
-    # Stop all old services
-    if [ -x %{_initrddir}/eucalyptus-cloud ]; then
-         /sbin/service eucalyptus-cloud stop
-    fi
-    if [ -x %{_initrddir}/eucalyptus-cc ]; then
-         /sbin/service eucalyptus-cc cleanstop
-    fi
-    if [ -x %{_initrddir}/eucalyptus-nc ]; then
-         /sbin/service eucalyptus-nc stop
-    fi
-
-    # Back up important data as well as all of the previous installation's jars.
-    BACKUPDIR="/var/lib/%{name}/upgrade/eucalyptus.backup.`date +%%s`"
-    mkdir -p "$BACKUPDIR"
-    EUCABACKUPS=""
-    for i in /var/lib/%{name}/keys/ /var/lib/%{name}/db/ /var/lib/%{name}/services %{eucaconfidr}/eucalyptus.conf /etc/%{name}/eucalyptus-version %{eucajavalibdir} %{eucahelperdir}; do
-        if [ -e $i ]; then
-            EUCABACKUPS="$EUCABACKUPS $i"
-        fi
-    done
-
-    OLD_EUCA_VERSION=`cat /etc/%{name}/eucalyptus-version`
-    echo "# This file was automatically generated by Eucalyptus packaging." > /etc/%{name}/.upgrade
-    echo "$OLD_EUCA_VERSION:$BACKUPDIR" >> /etc/%{name}/.upgrade
-
-    tar cf - $EUCABACKUPS 2>/dev/null | tar xf - -C "$BACKUPDIR" 2>/dev/null
-fi
-exit 0
-
 %post
 udevadm control --reload-rules
 
 %{_sbindir}/euca_conf -d / --instances /var/lib/%{name}/instances --hypervisor kvm --bridge br0
-
-if [ "$1" = "2" ]; then
-    if [ -f /etc/%{name}/.upgrade ]; then
-        while IFS=: read -r a b; do
-            OLD_EUCA_VERSION=$a
-            OLD_EUCA_PATH=$b
-        done < $EUCALYPTUS/etc/%{name}/.upgrade
-        %{helperdir}/euca_upgrade --old $OLD_EUCA_PATH --new / --conf >/var/log/%{name}/upgrade-config.log 2>&1
-    fi
-fi
-
-exit 0
 
 %post common-java
 %{systemd_post} eucalyptus-cloud.service
@@ -913,31 +850,26 @@ exit 0
 usermod -a -G kvm eucalyptus
 %{systemd_post} eucalyptus-nc.service
 
-%postun common-java
-# XXX: This is probably superfluous, because at least one of
-# sc / walrus / cloud will do a restart here, too.
-%{systemd_postun_with_restart} eucalyptus-cloud.service
-
-%postun cloud
-%{systemd_postun_with_restart} eucalyptus-cloud.service
-
-%postun walrus
-%{systemd_postun_with_restart} eucalyptus-cloud.service
-
-%postun sc
-%{systemd_postun_with_restart} eucalyptus-cloud.service
-
 %preun common-java
 %{systemd_preun} eucalyptus-cloud.service
 
 %preun cc
-%{_sbindir}/eucalyptus-cc.init cleanstop
 %{systemd_preun} eucalyptus-cc.service
 
 %preun nc
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Mon Sep 17 2012 Andy Grimm <agrimm@gmail.com> - 3.1.2-0.2.20120917gitb8c109b4
+- add with_axis2v14 variable to generate C code
+- Incorporate ESA updates
+
+* Mon Sep 10 2012 Andy Grimm <agrimm@gmail.com> - 3.1.2-0.1.20120913gitad123963
+- Update to 3.1.2 development code
+- Switch to a git snapshot
+- Remove several patches which are now present in git
+- Remove upgrade logic for now
+
 * Fri Sep  7 2012 Andy Grimm <agrimm@gmail.com> - 3.1.0-20
 - Create a new polkit rule
 - Add a patch to ignore missing grub-install

@@ -49,11 +49,8 @@ diff -ur eucalyptus-3.1.0/clc/modules/www.orig/conf/www/admin.xml eucalyptus-3.1
 diff -ur eucalyptus-3.1.0/clc/modules/www.orig/src/main/java/com/eucalyptus/bootstrap/HttpServerBootstrapper.java eucalyptus-3.1.0/clc/modules/www/src/main/java/com/eucalyptus/bootstrap/HttpServerBootstrapper.java
 --- eucalyptus-3.1.0/clc/modules/www.orig/src/main/java/com/eucalyptus/bootstrap/HttpServerBootstrapper.java	2012-08-07 11:29:11.908789566 -0400
 +++ eucalyptus-3.1.0/clc/modules/www/src/main/java/com/eucalyptus/bootstrap/HttpServerBootstrapper.java	2012-08-07 11:34:41.070759181 -0400
-@@ -62,12 +62,14 @@
- 
- import static com.eucalyptus.crypto.util.SslSetup.getEnabledCipherSuites;
- import java.io.File;
-+import java.io.FileNotFoundException;
+@@ -65,10 +65,11 @@
+ import java.io.FileNotFoundException;
  import java.io.IOException;
  import java.net.URL;
 +import java.nio.channels.SocketChannel;
