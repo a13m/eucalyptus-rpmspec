@@ -12,7 +12,7 @@
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.2
-Release:       0.2.20120917git%{gittag}%{?dist}
+Release:       0.3.20120917git%{gittag}%{?dist}
 License:       GPLv3 and (GPLv3 and ASL 2.0) and (GPLv3 and BSD)
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -495,6 +495,10 @@ rm walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/ObjectTest.java
 rm walrus/src/main/java/edu/ucsb/eucalyptus/cloud/ws/tests/WalrusBucketTests.java
 popd
 
+# Do not redistribute a binary floppy image
+# We should have a script to reconstruct this
+echo -n > $RPM_BUILD_ROOT%{_datadir}/%{name}/floppy
+
 %build
 export CFLAGS="%{optflags}"
 
@@ -657,7 +661,7 @@ chmod -x $RPM_BUILD_ROOT%{axis2c_services}/gl/services/EucalyptusGL/services.xml
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/nc/services/EucalyptusNC/services.xml
 
 # This file is no longer needed, and was not even ported from MySQL to PostGreSQL
-rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py
+rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py*
 
 # This is not the ideal way to set kernel parameters.  We'll deal with this
 # via documentation for now.
@@ -689,6 +693,7 @@ mv $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/drbd.conf.example \
 %dir /etc/%{name}/httpd
 %dir /etc/%{name}/httpd/conf
 %config(noreplace) /etc/%{name}/httpd/conf/httpd-common.conf
+%config /etc/tmpfiles.d/%{name}
 /etc/%{name}/httpd/modules
 %attr(-,root,eucalyptus) %dir %{eucalibexecdir}
 %attr(4750,root,eucalyptus) %{eucalibexecdir}/euca_mountwrap
@@ -860,6 +865,11 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Mon Sep 17 2012 Andy Grimm <agrimm@gmail.com> - 3.1.2-0.3.20120917gitb8c109b4
+- tmpfiles.d entry
+- remove eucadmin/local.pyc
+- truncate binary floppy file in prep
+
 * Mon Sep 17 2012 Andy Grimm <agrimm@gmail.com> - 3.1.2-0.2.20120917gitb8c109b4
 - add with_axis2v14 variable to generate C code
 - Incorporate ESA updates
