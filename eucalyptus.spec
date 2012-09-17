@@ -108,7 +108,8 @@ Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
 Requires(post): %{_sbindir}/euca_conf
 
-# Source0:       http://downloads.eucalyptus.com/software/eucalyptus/3.1/source/eucalyptus-3.1.0.tar.gz
+# git clone https://github.com/eucalyptus/eucalyptus.git; cd eucalyptus
+# git archive --prefix=eucalyptus-3.1.2gitb8c109b4/ -o eucalyptus-3.1.2gitb8c109b4.tar.gz b8c109b4
 Source0:       eucalyptus-%{version}git%{gittag}.tar.gz
 # A version of WSDL2C.sh that respects standard classpaths
 Source1:       euca-WSDL2C.sh
