@@ -1,0 +1,517 @@
+diff --git a/Makedefs.in b/Makedefs.in
+index fe5fa3c..1427fd2 100644
+--- a/Makedefs.in
++++ b/Makedefs.in
+@@ -18,19 +18,35 @@ export VDDK_HOME	  = @VDDK_HOME@
+ # comply to the GNU standard
+ prefix		= @prefix@
+ #exec_prefix	= @exec_prefix@
+-#bindir		= @bindir@
+-#sbindir	= @sbindir@
+-#libdir		= @libdir@
++bindir		= @bindir@
++docdir          = @docdir@
++sbindir		= @sbindir@
++libdir		= @libdir@
++libexecdir	= @libexecdir@
++localstatedir   = @localstatedir@
+ #mandir		= @mandir@
+-#incdir		= @includedir@
+-#etcdir		= @sysconfdir@
+-#datarootdir	= @datarootdir@
+-etcdir		= ${prefix}/etc
+-vardir		= ${prefix}/var
+-usrdir		= ${prefix}/usr
+-bindir		= ${prefix}/usr/bin
+-sbindir		= ${prefix}/usr/sbin
+-datarootdir	= ${usrdir}/share
++incdir		= @includedir@
++etcdir		= @sysconfdir@
++initddir       = $(etcdir)/init.d
++datarootdir	= @datarootdir@
++# etcdir	= ${prefix}/etc
++# vardir	= ${prefix}/var
++# usrdir	= ${prefix}/usr
++# bindir	= ${prefix}/usr/bin
++# sbindir	= ${prefix}/usr/sbin
++# datarootdir	= ${usrdir}/share
++
++# Trying to centralize the use of "prefix" and $EUCALYPTUS
++eucaconfdir     = ${prefix}${etcdir}/eucalyptus
++eucadatadir     = ${prefix}${datarootdir}/eucalyptus
++eucadocdir      = ${prefix}${docdir}/eucalyptus
++eucalibdir      = ${libdir}/eucalyptus
++eucastatedir    = ${prefix}${localstatedir}/lib/eucalyptus
++eucarundir      = ${prefix}${vardir}/run/eucalyptus
++eucalibexecdir  = ${prefix}${libexecdir}/eucalyptus
++eucasbindir     = ${prefix}/usr/sbin
++# This _could_ be eucalibexecdir instead
++eucahelperdir   = ${eucadatadir}
+ 
+ # where we are going to install eucalyptus and where are the sources
+ export EUCALYPTUS	= ${prefix}
+@@ -49,6 +65,17 @@ JAVA_HOME       = @JAVA_HOME@
+ RM		= @RM@
+ PYTHON		= @PYTHON@
+ 
++# various directory paths
++PATHS= -DSYSCONFDIR=\"$(etcdir)\" \
++       -DSBINDIR=\"$(sbindir)\" \
++       -DDATADIR=\"$(datarootdir)\" \
++       -DLIBDIR=\"$(libdir)\" \
++       -DLIBEXECDIR=\"$(libexecdir)\" \
++       -DLOCALSTATEDIR=\"$(localstatedir)\" \
++       -DHELPERDIR=\"$(datarootdir)\"
++
++CPPFLAGS	= @CPPFLAGS@ $(PATHS)
++
+ # compile time configurations
+ euca_theme	= @INTERFACE_THEME@
+ extensions	= @EXTENSIONS@
+diff --git a/Makefile b/Makefile
+index 6fab713..583390b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -42,24 +42,24 @@ deploy: build
+ 
+ install: deploy
+ 	@$(INSTALL) -d $(DESTDIR)$(prefix)
+-	@$(INSTALL) -d $(DESTDIR)$(etcdir)/eucalyptus/cloud.d
+-	@$(INSTALL) -d $(DESTDIR)$(etcdir)/eucalyptus/nc-hooks
+-	@$(INSTALL) -m 0644 VERSION $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus-version
++	@$(INSTALL) -d $(DESTDIR)$(eucaconfdir)/cloud.d
++	@$(INSTALL) -d $(DESTDIR)$(eucaconfdir)/nc-hooks
++	@$(INSTALL) -m 0644 VERSION $(DESTDIR)$(eucadatadir)/eucalyptus-version
+ 	@$(INSTALL) -d $(DESTDIR)$(etcdir)/init.d
+-	@$(INSTALL) -d $(DESTDIR)$(vardir)/run/eucalyptus/net
+-	@$(INSTALL) -d $(DESTDIR)$(vardir)/lib/eucalyptus/keys
+-	@$(INSTALL) -d $(DESTDIR)$(vardir)/lib/eucalyptus/CC
+-	@$(INSTALL) -d $(DESTDIR)$(vardir)/log/eucalyptus
+-	@$(INSTALL) -d $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -d $(DESTDIR)$(datarootdir)/eucalyptus/doc
+-	@$(INSTALL) -d $(DESTDIR)$(usrdir)/sbin
+-	@$(INSTALL) -d $(DESTDIR)$(usrdir)/lib/eucalyptus
++	@$(INSTALL) -d $(DESTDIR)$(eucarundir)/net
++	@$(INSTALL) -d $(DESTDIR)$(eucastatedir)/keys
++	@$(INSTALL) -d $(DESTDIR)$(eucastatedir)/CC
++	@$(INSTALL) -d $(DESTDIR)$(eucalogdir)
++	@$(INSTALL) -d $(DESTDIR)$(eucadatadir)
++	@$(INSTALL) -d $(DESTDIR)$(eucadocdir)
++	@$(INSTALL) -d $(DESTDIR)$(eucasbindir)
++	@$(INSTALL) -d $(DESTDIR)$(eucalibdir)
+ 	@$(INSTALL) -d $(DESTDIR)$(etcdir)/bash_completion.d
+ 	@for subdir in $(SUBDIRS); do \
+ 		(cd $$subdir && $(MAKE) $@) || exit $$? ; done
+ 
+ uninstall:
+-	@$(RM) -f $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus-version
++	@$(RM) -f $(DESTDIR)$(eucadatadir)/eucalyptus-version
+ 	@for subdir in $(SUBDIRS); do \
+ 		(cd $$subdir && $(MAKE) $@) || exit $$? ; done
+ 
+diff --git a/clc/Makefile b/clc/Makefile
+index ffa9c7c..1e7e887 100644
+--- a/clc/Makefile
++++ b/clc/Makefile
+@@ -82,8 +82,8 @@ deploy: install
+ 
+ uninstall:
+ 	make -C eucadmin uninstall
+-	$(RM) -rf $(DESTDIR)$(etcdir)/eucalyptus/cloud.d
+-	$(RM) -rf $(DESTDIR)$(datarootdir)/eucalyptus/*jar
++	$(RM) -rf $(DESTDIR)$(eucaconfdir)/cloud.d
++	$(RM) -rf $(DESTDIR)$(eucadatadir)/*jar
+ 	$(RM) -rf $(DESTDIR)$(vardir)/eucalyptus/webapps
+ 
+ # cleaning up after run-test currently requires a few iterations of:
+diff --git a/clc/modules/bootstrap/src/main/native/Makefile b/clc/modules/bootstrap/src/main/native/Makefile
+index 83e2880..fb504e8 100644
+--- a/clc/modules/bootstrap/src/main/native/Makefile
++++ b/clc/modules/bootstrap/src/main/native/Makefile
+@@ -37,7 +37,7 @@ OBJS =  eucalyptus-bootstrap.o eucalyptus-opts.o
+ all: eucalyptus-cloud
+ build: eucalyptus-cloud
+ .c.o:
+-	$(CC) $(CFLAGS) -c $< -o $@
++	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+ 
+ eucalyptus-cloud: eucalyptus-opts.h $(OBJS)
+ 	$(LDCMD) $(OBJS) -o eucalyptus-cloud $(LDFLAGS)
+@@ -48,8 +48,8 @@ eucalyptus-opts.h:
+ 	gengetopt --input=arguments.ggo --file-name=eucalyptus-opts --func-name=arguments --arg-struct-name=eucalyptus_opts
+ 
+ install: eucalyptus-cloud
+-	$(INSTALL) -d $(DESTDIR)$(sbindir)
+-	$(INSTALL) -m 0755 eucalyptus-cloud $(DESTDIR)$(sbindir)/eucalyptus-cloud
++	$(INSTALL) -d $(DESTDIR)$(eucasbindir)
++	$(INSTALL) -m 0755 eucalyptus-cloud $(DESTDIR)$(eucasbindir)/eucalyptus-cloud
+ 
+ clean:
+ 	@$(RM) -f $(OBJS) eucalyptus-cloud
+@@ -58,4 +58,4 @@ distclean: clean
+ 	@$(RM) -f $(OBJS) eucalyptus-cloud arguments.ggo
+ 
+ uninstall:
+-	@$(RM) -f $(DESTDIR)$(sbindir)/eucalyptus-cloud 
++	@$(RM) -f $(DESTDIR)$(eucasbindir)/eucalyptus-cloud 
+diff --git a/clc/modules/storage-controller/native/Makefile b/clc/modules/storage-controller/native/Makefile
+index 78bd451..8e18b14 100644
+--- a/clc/modules/storage-controller/native/Makefile
++++ b/clc/modules/storage-controller/native/Makefile
+@@ -11,11 +11,11 @@ WARN=-Wall -Wno-unused-variable
+ all: $(LIBDIR)/$(LVM2_SO) 
+ 
+ .c.o:
+-	gcc -c $(WARN) $(CFLAGS) $<
++	gcc -c $(WARN) $(CFLAGS) $(CPPFLAGS) $<
+ 
+ $(LIBDIR)/$(LVM2_SO): 
+ 	mkdir -p $(LIBDIR)
+-	gcc -shared $(CFLAGS) -o $(LIBDIR)/$(LVM2_SO) *.c
++	gcc -shared $(CFLAGS) $(CPPFLAGS) -o $(LIBDIR)/$(LVM2_SO) *.c
+ 
+ clean:
+ 	rm -rf $(LIBDIR)
+@@ -24,8 +24,8 @@ clean:
+ distclean: clean
+ 
+ install:
+-	mkdir -p $(DESTDIR)$(EUCALYPTUS)/usr/lib/eucalyptus/
+-	cp $(LIBDIR)/$(LVM2_SO) $(DESTDIR)$(EUCALYPTUS)/usr/lib/eucalyptus/
++	mkdir -p $(DESTDIR)$(eucalibdir)
++	cp $(LIBDIR)/$(LVM2_SO) $(DESTDIR)$(eucalibdir)
+ 
+ uninstall:
+-	rm -r $(DESTDIR)$(EUCALYPTUS)/usr/lib/eucalyptus/$(LVM2_SO)
++	rm -r $(DESTDIR)$(eucalibdir)/$(LVM2_SO)
+diff --git a/cluster/Makefile b/cluster/Makefile
+index b6a68aa..c8694df 100644
+--- a/cluster/Makefile
++++ b/cluster/Makefile
+@@ -52,7 +52,7 @@ generated/stubs: $(CCWSDL) $(NCWSDL)
+ 	@echo Stubs generated.
+ 
+ .c.o:
+-	$(CC) -c $(CFLAGS) $(INCLUDES) $<
++	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $<
+ 
+ ../node/client-marshal-fake.o:
+ 	make -C ../node fake
+@@ -114,10 +114,10 @@ distclean: clean
+ 	rm -rf generated cc-client-policy.xml
+ 
+ install: deploy
+-	@$(INSTALL) -m 0555 $(SHUTDOWNCC) $(DESTDIR)$(usrdir)/lib/eucalyptus
+-	@$(INSTALL) cc-client-policy.xml $(DESTDIR)$(vardir)/lib/eucalyptus/keys/
++	@$(INSTALL) -m 0555 $(SHUTDOWNCC) $(DESTDIR)$(eucalibexecdir)
++	@$(INSTALL) cc-client-policy.xml $(DESTDIR)$(eucastatedir)/keys/
+ 
+ uninstall:
+ #	@$(RM) -f $(DESTDIR)$(sbindir)/$(SHUTDOWNCC)
+-	@$(RM) -f $(DESTDIR)$(vardir)/lib/eucalyptus/keys/cc-client-policy.xml
++	@$(RM) -f $(DESTDIR)$(eucastatedir)/keys/cc-client-policy.xml
+ 	@$(RM) -rf $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)
+diff --git a/gatherlog/Makefile b/gatherlog/Makefile
+index e479095..bc4145e 100644
+--- a/gatherlog/Makefile
++++ b/gatherlog/Makefile
+@@ -34,7 +34,7 @@ generated/stubs: $(GLWSDL)
+ 	@echo Stubs generated.
+ 
+ .c.o:
+-	$(CC) -c $(CFLAGS) $(INCLUDES) $<
++	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $<
+ 
+ server: $(SERVICE_SO)
+ 
+diff --git a/net/Makefile b/net/Makefile
+index b68d722..985dfc4 100644
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -9,7 +9,7 @@ all: vnetwork.o
+ build: all
+ 
+ .c.o:
+-	$(CC) -c $(CFLAGS) $(INCLUDES) $<
++	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $<
+ 
+ clean:
+ 	rm -rf *~ *.o 
+diff --git a/node/Makefile b/node/Makefile
+index 8eb5146..a94b011 100644
+--- a/node/Makefile
++++ b/node/Makefile
+@@ -48,7 +48,7 @@ generated/stubs: $(NCWSDL)
+ 	@echo Stubs generated.
+ 
+ .c.o:
+-	$(CC) $(BUILD_ID) -c $(CFLAGS) `xslt-config --cflags` $(INCLUDES) $<
++	$(CC) $(BUILD_ID) -c $(CFLAGS) $(CPPFLAGS) `xslt-config --cflags` $(INCLUDES) $<
+ 
+ server: $(SERVICE_SO)
+ 
+@@ -98,24 +98,24 @@ client: $(CLIENT) $(CLIENT)_local
+ fake: $(CLIENT)_fake
+ 
+ $(CLIENT): generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o $(CLIENT).c ../storage/vbr.o
+-	$(CC) -o $(CLIENT) $(CFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
++	$(CC) -o $(CLIENT) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) generated/adb_*.o generated/axis2_stub_*.o $(AXIOM_LIBS) client-marshal-adb.o ../util/*.o $(AXIOM_LIBS) $(OPENSSL_LIBS) ../storage/diskutil.o ../net/*.o -lm $(CLIENT).c ../storage/http.o -lcurl ../storage/storage-windows.o
+ 
+ $(CLIENT)_fake: generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o client-marshal-fake.o $(CLIENT).c ../storage/vbr.o
+ 
+ $(CLIENT)_local: generated/stubs $(STORAGE_OBJS) ../util/misc.o ../util/data.o client-marshal-adb.o client-marshal-local.o handlers.o $(NC_HANDLERS) $(CLIENT).c ../util/euca_auth.o ../storage/vbr.o
+-	$(CC) -o $(CLIENT)_local $(INCLUDES) $(CFLAGS) client-marshal-local.o ../util/*.o $(STORAGE_OBJS) ../net/*.o handlers.o $(NC_HANDLERS) $(CLIENT).c $(NC_LIBS) ../storage/http.o ../storage/storage-windows.o
++	$(CC) -o $(CLIENT)_local $(INCLUDES) $(CFLAGS) $(CPPFLAGS) client-marshal-local.o ../util/*.o $(STORAGE_OBJS) ../net/*.o handlers.o $(NC_HANDLERS) $(CLIENT).c $(NC_LIBS) ../storage/http.o ../storage/storage-windows.o
+ 
+ test: test.c ../util/misc.o ../util/data.o
+-	$(CC) $(CFLAGS) $(INCLUDES) $(NC_LIBS) -o test test.c ../util/misc.o ../storage/diskutil.o ../util/data.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) -o test test.c ../util/misc.o ../storage/diskutil.o ../util/data.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
+ 
+ test_nc: test_nc.c ../util/misc.o ../storage/diskutil.o
+-	$(CC) $(CFLAGS) $(INCLUDES) $(NC_LIBS) -o test_nc -lvirt test_nc.c -lvirt ../util/misc.o ../storage/diskutil.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) -o test_nc -lvirt test_nc.c -lvirt ../util/misc.o ../storage/diskutil.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
+ 
+ test_hooks: hooks.c ../util/misc.o ../storage/diskutil.o
+-	$(CC) $(CFLAGS) $(INCLUDES) $(NC_LIBS) -o test_hooks -D__STANDALONE hooks.c ../util/misc.o ../storage/diskutil.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) -o test_hooks -D__STANDALONE hooks.c ../util/misc.o ../storage/diskutil.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
+ 
+ test_xml: xml.c
+-	$(CC) $(CFLAGS) $(INCLUDES) $(NC_LIBS) `xslt-config --cflags` -o test_xml -D__STANDALONE xml.c ../util/misc.o ../storage/diskutil.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $(NC_LIBS) `xslt-config --cflags` -o test_xml -D__STANDALONE xml.c ../util/misc.o ../storage/diskutil.o ../util/euca_auth.o $(OPENSSL_LIBS) ../util/ipc.o
+ 
+ deploy:
+ 	$(INSTALL) -d $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)/
+@@ -141,11 +141,11 @@ distclean:
+ 	rm -rf generated $(SERVICE_SO) *.o $(CLIENT) $(CLIENT)_local nc-client-policy.xml test test_nc test_hooks *~* *#*
+ 
+ install: deploy
+-	$(INSTALL) nc-client-policy.xml $(DESTDIR)$(vardir)/lib/eucalyptus/keys/
+-	$(INSTALL) -m 0755 test_nc $(DESTDIR)$(sbindir)/euca_test_nc
++	$(INSTALL) nc-client-policy.xml $(DESTDIR)$(eucastatedir)/keys/
++	$(INSTALL) -m 0755 test_nc $(DESTDIR)$(eucasbindir)/euca_test_nc
+ 
+ uninstall:
+-	$(RM) -f $(DESTDIR)$(vardir)/lib/eucalyptus/keys/nc-client-policy.xml
+-	$(RM) -f $(DESTDIR)$(sbindir)/euca_test_nc
++	$(RM) -f $(DESTDIR)$(eucastatedir)/keys/nc-client-policy.xml
++	$(RM) -f $(DESTDIR)$(eucasbindir)/euca_test_nc
+ 	$(RM) -rf $(DESTDIR)$(AXIS2C_SERVICES)/$(SERVICE_NAME)
+ 
+diff --git a/storage/Makefile b/storage/Makefile
+index b177a8e..b7485c2 100644
+--- a/storage/Makefile
++++ b/storage/Makefile
+@@ -18,22 +18,22 @@ all: vbr.o backing.o storage-windows.o walrus.o diskutil.o map.o Wclient euca-bl
+ build: all
+ 
+ euca-blobs: Makefile blobstore.c blobstore.h $(EUCA_BLOBS_OBJS)
+-	$(CC) $(CFLAGS) $(INCLUDES) -D_EUCA_BLOBS blobstore.c -o euca-blobs $(EUCA_BLOBS_OBJS) $(STORAGE_LIBS) $(EFENCE)
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -D_EUCA_BLOBS blobstore.c -o euca-blobs $(EUCA_BLOBS_OBJS) $(STORAGE_LIBS) $(EFENCE)
+ 
+ Wclient: Makefile Wclient.c $(WCLIENT_OBJS)
+-	$(CC) $(CFLAGS) $(INCLUDES) Wclient.c -o Wclient $(WCLIENT_OBJS) $(STORAGE_LIBS) $(EFENCE)
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) Wclient.c -o Wclient $(WCLIENT_OBJS) $(STORAGE_LIBS) $(EFENCE)
+ 
+ test_blobstore: blobstore.o $(TEST_BLOB_OBJS)
+-	$(CC) -g -rdynamic $(CFLAGS) $(INCLUDES) -D_UNIT_TEST blobstore.c -o test_blobstore $(TEST_BLOB_OBJS) $(STORAGE_LIBS) $(EFENCE)
++	$(CC) -g -rdynamic $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -D_UNIT_TEST blobstore.c -o test_blobstore $(TEST_BLOB_OBJS) $(STORAGE_LIBS) $(EFENCE)
+ 
+ test_vbr: vbr.o $(TEST_VBR_OBJS)
+-	$(CC) -g -rdynamic $(CFLAGS) $(INCLUDES) -D_UNIT_TEST vbr.c -o test_vbr $(TEST_VBR_OBJS) $(STORAGE_LIBS) $(EFENCE)
++	$(CC) -g -rdynamic $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -D_UNIT_TEST vbr.c -o test_vbr $(TEST_VBR_OBJS) $(STORAGE_LIBS) $(EFENCE)
+ 
+ test_url: http.c
+ 	$(CC) -D_UNIT_TEST -o test_url http.c
+ 
+ %.o: %.c %.h
+-	$(CC) -c $(CFLAGS) $(INCLUDES) $<
++	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $<
+ 
+ ../util/ipc.o: ../util/ipc.c ../util/ipc.h ../util/eucalyptus.h
+ 	make -C ../util
+diff --git a/tools/Makefile b/tools/Makefile
+index 859706c..882e8e7 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -18,71 +18,54 @@ distclean:
+ 	@rm -rf eucalyptus eucalyptus-cloud eucalyptus-walrus eucalyptus-sc
+ 
+ install: build
+-	@if test -e /etc/init.d/eucalyptus ; then \
+-		mv /etc/init.d/eucalyptus /etc/init.d/eucalyptus.old ; \
++	@if test -e $(initddir)/eucalyptus ; then \
++		mv $(initddir)/eucalyptus $(initddir)/eucalyptus.old ; \
+ 		echo "Moving away old init.d script"; fi
+-	@if test -e $(DESTDIR)$(etcdir)/init.d/eucalyptus ; then \
+-		mv $(DESTDIR)$(etcdir)/init.d/eucalyptus $(DESTDIR)$(etcdir)/init.d/eucalyptus.old ; fi
+-	@$(INSTALL) -m 755 eucalyptus-cloud $(DESTDIR)$(etcdir)/init.d
+-	@$(INSTALL) -m 755 eucalyptus-nc $(DESTDIR)$(etcdir)/init.d
+-	@$(INSTALL) -m 755 eucalyptus-cc $(DESTDIR)$(etcdir)/init.d
+-	@$(INSTALL) -m 644 httpd.conf $(DESTDIR)$(etcdir)/eucalyptus
+-	@if test -e $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus.conf ; then \
+-		cp $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus.conf $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus.conf.old ; fi
+-	@$(INSTALL) -m 644 eucalyptus.conf $(DESTDIR)$(etcdir)/eucalyptus
+-	@$(INSTALL) -m 644 vtunall.conf.template $(DESTDIR)$(etcdir)/eucalyptus
+-	@$(INSTALL) -m 755 add_key.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 gen_libvirt_xml $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 gen_kvm_libvirt_xml $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 detach.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 partition2disk $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 get_xen_info $(DESTDIR)$(datarootdir)/eucalyptus/get_xen_info
+-	@$(INSTALL) -m 755 get_sys_info $(DESTDIR)$(datarootdir)/eucalyptus/get_sys_info
+-	@$(INSTALL) -m 755 euca_ipt $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 euca_upgrade $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 populate_arp.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-#	@$(INSTALL) -m 755 euca_conf $(DESTDIR)$(sbindir)
++	@if test -e $(DESTDIR)$(initddir)/eucalyptus ; then \
++		mv $(DESTDIR)$(initddir)/eucalyptus $(DESTDIR)$(initddir)/eucalyptus.old ; fi
++	@$(INSTALL) -m 755 eucalyptus-cloud $(DESTDIR)$(initddir)
++	@$(INSTALL) -m 755 eucalyptus-nc $(DESTDIR)$(initddir)
++	@$(INSTALL) -m 755 eucalyptus-cc $(DESTDIR)$(initddir)
++	@$(INSTALL) -m 644 httpd.conf $(DESTDIR)$(eucaconfdir)
++	@if test -e $(DESTDIR)$(eucaconfdir)/eucalyptus.conf ; then \
++		cp $(DESTDIR)$(eucaconfdir)/eucalyptus.conf $(DESTDIR)$(eucaconfdir)/eucalyptus.conf.old ; fi
++	@$(INSTALL) -m 644 eucalyptus.conf $(DESTDIR)$(eucaconfdir)
++	@$(INSTALL) -m 644 vtunall.conf.template $(DESTDIR)$(eucadatadir)
++	@$(INSTALL) -d 755 $(DESTDIR)$(eucahelperdir)
++	@for x in add_key.pl gen_libvirt_xml gen_kvm_libvirt_xml detach.pl partition2disk \
++	        get_xen_info get_sys_info euca_ipt euca_upgrade populate_arp.pl \
++	        connect_iscsitarget.pl connect_iscsitarget_sc.pl disconnect_iscsitarget.pl \
++	        disconnect_iscsitarget_sc.pl get_iscsitarget.pl floppy dynserv.pl \
++	        getstats.pl create-loop-devices; \
++	    do $(INSTALL) -m 755 $$x $(DESTDIR)$(eucahelperdir); done
++#	@$(INSTALL) -m 755 euca_conf $(DESTDIR)$(eucasbindir)
+ #	-$(INSTALL) -m 755 euca_conf.complete $(DESTDIR)$(etcdir)/bash_completion.d/euca_conf
+-#	@$(INSTALL) -m 755 eucanetd $(DESTDIR)$(sbindir)
+-	@$(INSTALL) -m 755 euca_sync_key $(DESTDIR)$(sbindir)
+-	@$(INSTALL) -m 755 connect_iscsitarget.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 connect_iscsitarget_sc.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 disconnect_iscsitarget.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 disconnect_iscsitarget_sc.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 get_iscsitarget.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 644 floppy $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 dynserv.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 644 libvirt-kvm-windows-example.xml $(DESTDIR)$(datarootdir)/eucalyptus/doc/
+-	@$(INSTALL) -m 644 libvirt-xen-windows-example.xml $(DESTDIR)$(datarootdir)/eucalyptus/doc/
+-	@$(INSTALL) -m 755 getstats.pl $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 euca-lictool $(DESTDIR)$(sbindir)
+-	@$(INSTALL) -m 755 lic_template $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 755 lic_default $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 644 libvirt.xsl $(DESTDIR)$(etcdir)/eucalyptus
+-	@$(INSTALL) -m 755 create-loop-devices $(DESTDIR)$(datarootdir)/eucalyptus
+-	@$(INSTALL) -m 644 nc-hooks/example.sh $(DESTDIR)$(etcdir)/eucalyptus/nc-hooks/
++#	@$(INSTALL) -m 755 eucanetd $(DESTDIR)$(eucasbindir)
++	@$(INSTALL) -m 755 euca_sync_key $(DESTDIR)$(eucasbindir)
++	@$(INSTALL) -m 644 libvirt-kvm-windows-example.xml $(DESTDIR)$(eucadocdir)
++	@$(INSTALL) -m 644 libvirt-xen-windows-example.xml $(DESTDIR)$(eucadocdir)
++	@$(INSTALL) -m 755 euca-lictool $(DESTDIR)$(eucasbindir)
++	@$(INSTALL) -m 644 libvirt.xsl $(DESTDIR)$(eucaconfdir)
++	@$(INSTALL) -m 644 nc-hooks/example.sh $(DESTDIR)$(eucaconfdir)/nc-hooks/
++	@$(INSTALL) -m 644 lic_template $(DESTDIR)$(eucadatadir)
++	@$(INSTALL) -m 644 lic_default $(DESTDIR)$(eucadatadir)
+ 
+ uninstall:
+-	@$(RM) -f $(DESTDIR)$(etcdir)/init.d/eucalyptus-cloud
+-	@$(RM) -f $(DESTDIR)$(etcdir)/init.d/eucalyptus-nc
+-	@$(RM) -f $(DESTDIR)$(etcdir)/init.d/eucalyptus-cc
+-	@$(RM) -f $(DESTDIR)$(etcdir)/eucalyptus/httpd*
+-	@$(RM) -f $(DESTDIR)$(etcdir)/eucalyptus/eucalyptus.conf
+-	@$(RM) -f $(DESTDIR)$(etcdir)/eucalyptus/vtunall.conf.template
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/add_key.pl
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/gen_libvirt_xml
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/gen_kvm_libvirt_xml
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/detach.pl
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/partition2disk
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/get_xen_info
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/get_sys_info
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/euca_ipt
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/euca_upgrade
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/populate_arp.pl
+-	@$(RM) -f $(DESTDIR)$(sbindir)/euca_conf
++	@for x in eucalyptus-cloud eucalyptus-nc eucalyptus-cc; \
++	    do @$(RM) -f $(DESTDIR)$(initddir)/$$x; done
++	@$(RM) -f $(DESTDIR)$(eucaconfdir)/httpd*
++	@$(RM) -f $(DESTDIR)$(eucaconfdir)/eucalyptus.conf
++	@$(RM) -f $(DESTDIR)$(eucadatadir)/vtunall.conf.template
++# XXX: Need root privs
+ 	@$(RM) -f $(DESTDIR)$(etcdir)/bash_completion.d/euca_conf
+-	@$(RM) -f $(DESTDIR)$(sbindir)/euca_sync_key
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/lic_template
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/lic_default
+-	@$(RM) -f $(DESTDIR)$(sbindir)/euca-lictool
+-	@$(RM) -f $(DESTDIR)$(datarootdir)/eucalyptus/create-loop-devices
++	@for x in add_key.pl gen_libvirt_xml gen_kvm_libvirt_xml detach.pl partition2disk \
++	        get_xen_info get_sys_info euca_ipt euca_upgrade populate_arp.pl \
++	        connect_iscsitarget.pl connect_iscsitarget_sc.pl disconnect_iscsitarget.pl \
++	        disconnect_iscsitarget_sc.pl get_iscsitarget.pl floppy dynserv.pl \
++	        getstats.pl create-loop-devices; \
++	    do $(RM) -f $(DESTDIR)$(eucahelperdir)/$$x; done
++	@$(RM) -f $(DESTDIR)$(eucasbindir)/euca_conf
++	@$(RM) -f $(DESTDIR)$(eucasbindir)/euca_sync_key
++	@$(RM) -f $(DESTDIR)$(eucasbindir)/euca-lictool
++	@$(RM) -f $(DESTDIR)$(eucadatadir)/lic_template
++	@$(RM) -f $(DESTDIR)$(eucadatadir)/lic_default
+diff --git a/util/Makefile b/util/Makefile
+index 8571826..dda0681 100644
+--- a/util/Makefile
++++ b/util/Makefile
+@@ -9,22 +9,22 @@ all: misc.o hash.o data.o euca_auth.o euca_axis.o ipc.o windows-bundle.o euca_ro
+ build: all 
+ 
+ euca_rootwrap: euca_rootwrap.c
+-	$(CC) $(CFLAGS) $(INCLUDES) -o euca_rootwrap euca_rootwrap.c
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o euca_rootwrap euca_rootwrap.c
+ 
+ euca_mountwrap: euca_mountwrap.c
+-	$(CC) $(CFLAGS) $(INCLUDES) -o euca_mountwrap euca_mountwrap.c
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o euca_mountwrap euca_mountwrap.c
+ 
+ test: test.c ipc.o misc.o
+-	$(CC) $(CFLAGS) $(INCLUDES) -o test test.c ipc.o misc.o data.o -lpthread $(LIBS) $(LDFLAGS)
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o test test.c ipc.o misc.o data.o -lpthread $(LIBS) $(LDFLAGS)
+ 
+ test_misc: misc.c ../storage/diskutil.o ipc.o euca_auth.o
+-	$(CC) $(CFLAGS) $(INCLUDES) -D_UNIT_TEST -o test_misc misc.c ../storage/diskutil.o ipc.o euca_auth.o -lpthread -lcrypto $(LIBS) $(LDFLAGS)
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -D_UNIT_TEST -o test_misc misc.c ../storage/diskutil.o ipc.o euca_auth.o -lpthread -lcrypto $(LIBS) $(LDFLAGS)
+ 
+ ../storage/diskutil.o:
+ 	make -C ../storage
+ 
+ .c.o: $@
+-	$(CC) -c -std=gnu99 $(CFLAGS) $(INCLUDES) $<
++	$(CC) -c -std=gnu99 $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $<
+ 
+ clean:
+ 	rm -rf *~ *.o test test_misc euca_rootwrap euca_mountwrap
+@@ -33,12 +33,13 @@ distclean:
+ 	rm -rf config.h
+ 
+ install:
+-	@$(INSTALL) -m 0755 euca_rootwrap $(DESTDIR)$(usrdir)/lib/eucalyptus/
+-	@$(INSTALL) -m 0755 euca_mountwrap $(DESTDIR)$(usrdir)/lib/eucalyptus/
++	@$(INSTALL) -d -m 0755 $(DESTDIR)$(eucalibexecdir)
++	@$(INSTALL) -m 0755 euca_rootwrap $(DESTDIR)$(eucalibexecdir)/
++	@$(INSTALL) -m 0755 euca_mountwrap $(DESTDIR)$(eucalibexecdir)/
+ 
+ deploy:
+ 
+ uninstall:
+-	@$(RM) -f $(DESTDIR)$(usrdir)/lib/eucalyptus/euca_rootwrap
+-	@$(RM) -f $(DESTDIR)$(usrdir)/lib/eucalyptus/euca_mountwrap
++	@$(RM) -f $(DESTDIR)$(eucalibexecdir)/euca_rootwrap
++	@$(RM) -f $(DESTDIR)$(eucalibexecdir)/euca_mountwrap
+ 
+diff --git a/util/eucalyptus-config.h.in b/util/eucalyptus-config.h.in
+index 88a131c..643498f 100644
+--- a/util/eucalyptus-config.h.in
++++ b/util/eucalyptus-config.h.in
+@@ -8,6 +8,9 @@
+ /* Current version */
+ #undef EUCA_VERSION
+ 
++/* location for rootwrap / mountwrap
++#undef EUCALYPTUS_LIBEXEC_DIR
++
+ /* headers on the system */
+ 
+ /* Define if you have standards headers */

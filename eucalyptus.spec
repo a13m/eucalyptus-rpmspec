@@ -6,6 +6,7 @@
 %global helperdir         %{_datadir}/%{name}
 %global gittag            b8c109b4
 %global with_axis2v14     0
+%global _hardened_build   1
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
@@ -151,6 +152,9 @@ Source13:      eucalyptus-clean-cc
 # Add a new-style polkit rule
 Source14:      eucalyptus-nc-libvirt.rules
 
+# Add tmpfiles config
+Source15:      eucalyptus.tmpfiles
+
 # https://eucalyptus.atlassian.net/browse/EUCA-2364
 Patch0:        eucalyptus-jdk7.patch
 # https://eucalyptus.atlassian.net/browse/EUCA-3253
@@ -183,6 +187,9 @@ Patch18:       eucalyptus-jni-abspath.patch
 
 # Move version file out of /etc
 Patch20:       eucalyptus-move-version-file.patch
+
+# Respect LDFLAGS when building setuid binaries
+Patch21:       eucalyptus-respect-ldflags.patch
 
 %description
 Eucalyptus is a service overlay that implements elastic computing
@@ -471,6 +478,7 @@ touch gatherlog/generated/stubs cluster/generated/stubs node/generated/stubs
 %patch16 -p1
 %patch18 -p1
 %patch20 -p1
+%patch21 -p1
 
 # disable modules by removing their build.xml files
 rm clc/modules/reporting/build.xml
@@ -497,10 +505,11 @@ popd
 
 # Do not redistribute a binary floppy image
 # We should have a script to reconstruct this
-echo -n > $RPM_BUILD_ROOT%{_datadir}/%{name}/floppy
+echo -n > tools/floppy
 
 %build
 export CFLAGS="%{optflags}"
+export LDFLAGS="$RPM_LD_FLAGS"
 
 # TODO: we should use %%configure now, except that "prefix" is still broken
 # Also, helperdir sould be a config option, unless we decide that
@@ -682,6 +691,10 @@ ln -s %{_libexecdir}/%{name}/upgrade \
 mv $RPM_BUILD_ROOT%{_docdir}/%{name} $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}
 mv $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/drbd.conf.example \
    $RPM_BUILD_ROOT%{_docdir}/%{name}-%{version}/
+
+# install tmpfiles config
+install -d -m 755 $RPM_BUILD_ROOT/etc/tmpfiles.d
+install -m 0644 %{SOURCE15} $RPM_BUILD_ROOT/etc/tmpfiles.d/%{name}
 
 %files
 %doc LICENSE INSTALL README CHANGELOG

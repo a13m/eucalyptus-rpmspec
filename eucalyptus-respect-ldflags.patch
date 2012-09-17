@@ -1,0 +1,15 @@
+--- eucalyptus-3.1.2gitb8c109b4/util/Makefile	2012-09-17 12:35:58.973014196 -0400
++++ eucalyptus-3.1.2gitb8c109b4.new/util/Makefile	2012-09-17 14:55:37.092135613 -0400
+@@ -9,10 +9,10 @@
+ build: all 
+ 
+ euca_rootwrap: euca_rootwrap.c
+-	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o euca_rootwrap euca_rootwrap.c
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o euca_rootwrap euca_rootwrap.c $(LDFLAGS)
+ 
+ euca_mountwrap: euca_mountwrap.c
+-	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o euca_mountwrap euca_mountwrap.c
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o euca_mountwrap euca_mountwrap.c $(LDFLAGS)
+ 
+ test: test.c ipc.o misc.o
+ 	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -o test test.c ipc.o misc.o data.o -lpthread $(LIBS) $(LDFLAGS)
