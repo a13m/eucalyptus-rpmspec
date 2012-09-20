@@ -13,7 +13,7 @@
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.2
-Release:       0.3.20120917git%{gittag}%{?dist}
+Release:       0.4.20120917git%{gittag}%{?dist}
 License:       GPLv3 and (GPLv3 and ASL 2.0) and (GPLv3 and BSD)
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -35,6 +35,7 @@ BuildRequires: iscsi-initiator-utils
 BuildRequires: curl-devel
 BuildRequires: systemd-units
 
+BuildRequires: activemq-core
 BuildRequires: ant >= 1.7
 BuildRequires: antlr-tool
 BuildRequires: apache-commons-codec
@@ -160,8 +161,6 @@ Source15:      eucalyptus.tmpfiles
 Patch0:        eucalyptus-jdk7.patch
 # https://eucalyptus.atlassian.net/browse/EUCA-3253
 Patch2:        eucalyptus-jetty8.patch
-# Reporting module requires activemq, which is not yet packaged
-Patch3:        eucalyptus-no-reporting.patch
 # https://eucalyptus.atlassian.net/browse/EUCA-2993
 Patch4:        eucalyptus-groovy18.patch
 
@@ -208,6 +207,7 @@ Requires:     %{name} = %{version}-%{release}
 Requires:     jpackage-utils
 Requires:     java >= 1:1.6.0
 Requires:     lvm2
+Requires:     activemq-core
 Requires:     ant
 Requires:     antlr-tool
 Requires:     apache-commons-codec
@@ -238,6 +238,7 @@ Requires:     hibernate3-proxool
 Requires:     hibernate-commons-annotations
 Requires:     hibernate-jpa-2.0-api
 Requires:     jakarta-commons-httpclient
+Requires:     jasperreports
 Requires:     javamail
 Requires:     jetty
 Requires:     jgroups212
@@ -468,7 +469,6 @@ touch gatherlog/generated/stubs cluster/generated/stubs node/generated/stubs
 %endif
 %patch0 -p1
 %patch2 -p1
-%patch3 -p1
 %patch4 -p1
 %patch9 -p1
 %patch10 -p1
@@ -480,9 +480,6 @@ touch gatherlog/generated/stubs cluster/generated/stubs node/generated/stubs
 %patch18 -p1
 %patch20 -p1
 %patch21 -p1
-
-# disable modules by removing their build.xml files
-rm clc/modules/reporting/build.xml
 
 # remove classes which depend on junit
 # This is because junit on Fedora bundles hamcrest 1.1, which has conflicts
@@ -879,6 +876,9 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Thu Sep 20 2012 Andy Grimm <agirmm@gmail.com> - 3.1.2-0.4.20120917gitb8c109b4
+- Enable reporting
+
 * Mon Sep 17 2012 Andy Grimm <agrimm@gmail.com> - 3.1.2-0.3.20120917gitb8c109b4
 - tmpfiles.d entry
 - remove eucadmin/local.pyc

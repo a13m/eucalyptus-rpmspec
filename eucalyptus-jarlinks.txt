@@ -1,3 +1,7 @@
+/usr/share/java/activemq/kahadb.jar
+/usr/share/java/activemq/activeio-core.jar
+/usr/share/java/activemq/activemq-core.jar
+/usr/share/java/activemq/protobuf.jar
 /usr/share/java/ant.jar
 /usr/share/java/antlr.jar
 /usr/share/java/apache-commons-beanutils.jar
@@ -55,6 +59,7 @@
 /usr/share/java/hibernate/hibernate-commons-annotations.jar
 /usr/share/java/hibernate-jpa-2.0-api.jar
 /usr/share/java/jakarta-commons-httpclient.jar
+/usr/share/java/jasperreports/jasperreports.jar
 /usr/share/java/javamail/mail.jar
 /usr/share/java/javassist.jar
 /usr/share/java/java-uuid-generator.jar

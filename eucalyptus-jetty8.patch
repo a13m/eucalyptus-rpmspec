@@ -194,3 +194,25 @@ diff -ur eucalyptus-3.1.0/clc/modules/core/src/main/resources/log4j.xml eucalypt
      <priority value="${euca.log.level}" />
      <appender-ref ref="cloud-exhaust" />
    </category>
+--- eucalyptus-3.1.2gitb8c109b4/clc/modules/reporting/src/main/java/com/eucalyptus/reporting/modules/s3/S3ReportingModule.java	2012-09-17 09:23:43.000000000 -0700
++++ eucalyptus-3.1.2gitb8c109b4.new/clc/modules/reporting/src/main/java/com/eucalyptus/reporting/modules/s3/S3ReportingModule.java	2012-09-20 12:11:27.903623883 -0700
+@@ -3,7 +3,7 @@
+ import java.util.*;
+ 
+ import org.apache.log4j.Logger;
+-import org.mortbay.log.Log;
++import org.eclipse.jetty.util.log.Log;
+ 
+ import com.eucalyptus.reporting.Period;
+ import com.eucalyptus.reporting.ReportingModule;
+--- eucalyptus-3.1.2gitb8c109b4/clc/modules/reporting/src/main/java/com/eucalyptus/reporting/user/ReportingAccountDao.java	2012-09-17 09:23:43.000000000 -0700
++++ eucalyptus-3.1.2gitb8c109b4.new/clc/modules/reporting/src/main/java/com/eucalyptus/reporting/user/ReportingAccountDao.java	2012-09-20 12:31:16.614116462 -0700
+@@ -4,7 +4,7 @@
+ import java.util.concurrent.ConcurrentHashMap;
+ 
+ import org.apache.log4j.Logger;
+-import org.mortbay.log.Log;
++import org.eclipse.jetty.util.log.Log;
+ 
+ import com.eucalyptus.entities.EntityWrapper;
+ 
