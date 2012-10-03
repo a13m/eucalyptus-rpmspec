@@ -7,13 +7,14 @@
 %global gittag            b8c109b4
 %global with_axis2v14     0
 %global _hardened_build   1
+%global __provides_exclude_from ^%{_libdir}/%{name}/.*.so$
 
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Summary:       Elastic Utility Computing Architecture
 Name:          eucalyptus
 Version:       3.1.2
-Release:       0.4.20120917git%{gittag}%{?dist}
+Release:       0.5.20120917git%{gittag}%{?dist}
 License:       GPLv3 and (GPLv3 and ASL 2.0) and (GPLv3 and BSD)
 URL:           http://www.eucalyptus.com
 Group:         Applications/System
@@ -666,6 +667,7 @@ chmod -x $RPM_BUILD_ROOT%{axis2c_services}/cc/services/EucalyptusCC/services.xml
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/gl/services/EucalyptusGL/eucalyptus_gl.wsdl
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/gl/services/EucalyptusGL/services.xml
 chmod -x $RPM_BUILD_ROOT%{axis2c_services}/nc/services/EucalyptusNC/services.xml
+chmod -x $RPM_BUILD_ROOT%{_datadir}/eucalyptus/floppy
 
 # This file is no longer needed, and was not even ported from MySQL to PostGreSQL
 rm $RPM_BUILD_ROOT%{python_sitelib}/eucadmin/local.py*
@@ -695,7 +697,7 @@ install -d -m 755 $RPM_BUILD_ROOT/etc/tmpfiles.d
 install -m 0644 %{SOURCE15} $RPM_BUILD_ROOT/etc/tmpfiles.d/%{name}
 
 %files
-%doc LICENSE INSTALL README CHANGELOG
+%doc LICENSE README CHANGELOG
 # Eucalyptus initialization fails if the eucalyptus user
 # cannot write this file.  
 %config(noreplace) %attr(-,eucalyptus,eucalyptus) /etc/%{name}/eucalyptus.conf
@@ -768,7 +770,7 @@ install -m 0644 %{SOURCE15} $RPM_BUILD_ROOT/etc/tmpfiles.d/%{name}
 %attr(-,eucalyptus,eucalyptus) %dir /var/lib/%{name}/CC
 %config(noreplace) /etc/%{name}/httpd/conf/httpd-cc.conf
 %{_datadir}/%{name}/vtunall.conf.template
-%{_libexecdir}/eucalyptus/shutdownCC
+%attr(0755,root,root) %{_libexecdir}/eucalyptus/shutdownCC
 %{_sbindir}/eucalyptus-clean-cc
 %{helperdir}/dynserv.pl
 # Is this used?
@@ -854,8 +856,6 @@ getent passwd eucalyptus >/dev/null || \
 %post
 udevadm control --reload-rules
 
-%{_sbindir}/euca_conf -d / --instances /var/lib/%{name}/instances --hypervisor kvm --bridge br0
-
 %post common-java
 %{systemd_post} eucalyptus-cloud.service
 
@@ -876,6 +876,10 @@ usermod -a -G kvm eucalyptus
 %{systemd_preun} eucalyptus-nc.service
 
 %changelog
+* Wed Oct 03 2012 Andy Grimm <agirmm@gmail.com> - 3.1.2-0.5.20120917gitb8c109b4
+- Fix some file permissions
+- filter internal library provides
+
 * Thu Sep 20 2012 Andy Grimm <agirmm@gmail.com> - 3.1.2-0.4.20120917gitb8c109b4
 - Enable reporting
 
